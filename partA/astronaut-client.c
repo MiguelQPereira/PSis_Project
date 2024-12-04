@@ -15,6 +15,7 @@ int main()
     int rc;
     char buffer[100];
     char resp[100];
+    int score = 0;
 
     /* Declare and bind socket to comunicate with astronauts using the REP/REQ patern */
     sprintf(buffer,"tcp://%s:%d",IP_ADRESS,PORT_RR);
@@ -35,26 +36,22 @@ int main()
     zmq_recv (requester, &resp, sizeof(resp), 0);
     if(strcmp(resp, "-1") != 0) {
         sscanf(resp, "%c, %d", &message.ch, &message.id); // Save player character to the struct
-        printf("Connected\n");
+        printf("Connected\nYour player character is: %c\n",message.ch);
     }
     else {
         printf("--- ERROR ---\nMAXIMUM NUMBER OF PLAYERS REACHED\n");
         exit(1);
     }
     
-
+    // prepare the movement message
+    message.msg_type = 1;
 
 	initscr();			/* Start curses mode 		*/
 	cbreak();				/* Line buffering disabled	*/
 	keypad(stdscr, TRUE);		/* We get F1, F2 etc..		*/
 	noecho();			/* Don't echo() while we do getch */
 
-    int n = 0;
-
-    //TODO_9
-    // prepare the movement message
-    message.msg_type = 1;
-    //m.ch = ch;
+    int n = 0; // Count the keys pressed
     
     int key;
     do
@@ -64,46 +61,111 @@ int main()
         switch (key)
         {
         case KEY_LEFT:
-            mvprintw(0,0,"%d Left arrow is pressed", n);
-            //TODO_9
-            // prepare the movement message
-           message.direction = LEFT;
-            break;
+            // This letters correspond to the top and bottom astronauts in the display, so, they are the only ones that can move 
+            // to the left or right 
+            if(message.ch == 'B' || message.ch == 'D' || message.ch == 'F' || message.ch == 'H') {
+
+                mvprintw(0,0,"%d Left arrow is pressed", n);
+                // prepare the movement message
+                message.direction = LEFT;
+                break;
+            }
+            // If you try to move other players than this ones in this direction you will have to try again 
+            else {
+                key = 'x';
+            }
+                
         case KEY_RIGHT:
-            mvprintw(0,0,"%d Right arrow is pressed", n);
-            //TODO_9
-            // prepare the movement message
-            message.direction = RIGHT;
-            break;
+            // This letters correspond to the top and bottom astronauts in the display, so, they are the only ones that can move 
+            // to the left or right
+            if(message.ch == 'B' || message.ch == 'D' || message.ch == 'F' || message.ch == 'H') {
+
+                mvprintw(0,0,"%d Left arrow is pressed", n);
+                // prepare the movement message
+                message.direction = LEFT;
+                break;
+            }
+            // If you try to move other players than this ones in this direction you will have to try again 
+            else {
+                key = 'x';
+            }
         case KEY_DOWN:
-            mvprintw(0,0,"%d Down arrow is pressed", n);
-            //TODO_9
-            // prepare the movement message
-           message.direction = DOWN;
-            break;
+            // This letters correspond to the left and right astronauts in the display, so, they are the only ones that can move 
+            // up and down
+            if(message.ch == 'A' || message.ch == 'C' || message.ch == 'E' || message.ch == 'G') {
+
+                mvprintw(0,0,"%d Left arrow is pressed", n);
+                // prepare the movement message
+                message.direction = LEFT;
+                break;
+            }
+            // If you try to move other players than this ones in this direction you will have to try again 
+            else {
+                key = 'x';
+            }
         case KEY_UP:
-            mvprintw(0,0,"%d :Up arrow is pressed", n);
-            //TODO_9
-            // prepare the movement message
-            message.direction = UP;
+            // This letters correspond to the left and right astronauts in the display, so, they are the only ones that can move 
+            // up and down
+            if(message.ch == 'A' || message.ch == 'C' || message.ch == 'E' || message.ch == 'G') {
+
+                mvprintw(0,0,"%d Left arrow is pressed", n);
+                // prepare the movement message
+                message.direction = LEFT;
+                break;
+            }
+            // If you try to move other players than this ones in this direction you will have to try again 
+            else {
+                key = 'x';
+            }
+
+        case ' ':
+            mvprintw(0,0,"%d Zapping", n);
+            // prepare ZAP message
+            message.direction = ZAP;
+            message.msg_type = 2; // sending zap
+            break;  
+
+        case 'q':
+            mvprintw(0,0,"%d 'q' Disconnecting...", n);
+            // prepare QUIT message
+            message.direction = QUIT;
+            message.msg_type = 3; // sending quit message 
             break;
+
+        case 'Q':
+            mvprintw(0,0,"%d 'Q' Disconnecting...", n);
+            // prepare QUIT message
+            message.direction = QUIT;
+            message.msg_type = 3; // sending quit message 
+            break;
+              
 
         default:
             key = 'x'; 
             break;
         }
 
-        //TODO_10
         //send the movement message
          if (key != 'x'){
             zmq_send (requester, &message, sizeof(message), 0);
-            zmq_recv (requester, &resp, sizeof(resp), 0);
+            zmq_recv (requester, &score, sizeof(int), 0);
+            mvprintw(10,10,"Your score: %d",score);
         }
+
+        else {
+            mvprintw(0,0,"--- UPS ---\nTry again");
+        }
+
+        
         refresh();			/* Print it on to the real screen */
-    }while(key != 27);
+    }while(key != 113 && key != 81);
     
     
   	endwin();			/* End curses mode		  */
 
+    // Close socket in case of disconnect
+    zmq_close (requester);
+    zmq_ctx_destroy (context);
 	return 0;
+
 }

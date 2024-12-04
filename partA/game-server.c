@@ -116,7 +116,7 @@ int main(){
     if (rc == -1){
         printf("--- ERROR ---\nBINDING TO PORT %d FAILED\n", PORT_SP);
         exit(0);
-    }
+    } 
     while (1){
         rc = zmq_recv(responder_RR, &message, sizeof(remote_char_t), 0);
         if (rc == -1){

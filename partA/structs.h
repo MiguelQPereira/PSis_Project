@@ -2,7 +2,7 @@
 
 int PORT_RR = 5555; // REQ-REP
 int PORT_SP = 5554; // SUB-PUB
-char IP_ADRESS[16] = "xxx.xxx.xxx.xxx"; //Insert the address
+char IP_ADRESS[16] = "192.168.1.70"; //Insert the address
 
 
 
@@ -16,15 +16,17 @@ typedef enum directions_t{
     UP,
     DOWN,
     LEFT,
-    RIGHT
+    RIGHT,
+    ZAP,
+    QUIT
 }directions_;
 
-// Struct containing message type (if the player is joining, moving, etc...), the character the player is going to play adn the directions
+// Struct containing message type (if the player is joining, moving, etc...), the character the player is going to play, the directions and ID
 typedef struct remote_char_t_{
     int id; // personal identifier of the client
     int msg_type; // 0 - join  // 1 - move // 2 - zap // 3 - disconnect
     char ch; // character that identifies the client
-    directions_ direction;
+    directions_ direction; // directions of the character
 
 } remote_char_t;
 
@@ -32,6 +34,7 @@ typedef struct remote_char_t_{
 typedef struct server_data_t_{
     int id; // personal identifier given by server at run time to a client
     char ch; // caracter that the player controls
+    int score; // Saves the players scores 
     int x,y; // position of the caracter
 
 } server_data_t;
