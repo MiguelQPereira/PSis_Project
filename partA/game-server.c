@@ -3,8 +3,9 @@
 #include <ncurses.h>
 #include <string.h>
 #include <zmq.h>
-
 #include "structs.h"
+#define  WINDOW_SIZE 20
+
 
 int connect_msg (void* socket, int num_players, server_data_t player){
     char resp[100];
@@ -22,28 +23,73 @@ int connect_msg (void* socket, int num_players, server_data_t player){
 
     zmq_send(socket, resp, sizeof(resp), 0);
     if (rc == -1){
-        printf("--- ERROR ---\nFAILED TO SEND MESSAGE (connect_msg)\n");
+        mvprintw(0,0,"--- ERROR ---\nFAILED TO SEND MESSAGE (connect_msg)");
         exit(0);
     }
 
     return num_players; // return new num_players or -1 if can't join
 }
 
-void movement_msg(){
-    printf("--- ERROR ---\nFUNCTION NOT IMPLEMENTED (connect_msg)\n");
-    exit(0);
+void movement_msg(void *socket,int num_players, server_data_t player){
+    int rc;
+    rc = zmq_send(socket,&player,sizeof(player),0);
+    if (rc == -1){
+        mvprintw(0,0,"--- ERROR ---\nFAILED TO SEND MESSAGE (movement_msg)");
+        exit(0);
+    }
+
 }
 
-void zap_msg(){
-    printf("--- ERROR ---\nFUNCTION NOT IMPLEMENTED (connect_msg)\n");
-    exit(0);
+void zap_msg(void *socket,int num_players, server_data_t player){
+    int rc;
+    rc = zmq_send(socket,&player,sizeof(player),0);
+    if (rc == -1){
+        mvprintw(0,0,"--- ERROR ---\nFAILED TO SEND MESSAGE (zap_msg)");
+        exit(0);
+    }
+
 }
 
-void disconnect_msg(){
-    printf("--- ERROR ---\nFUNCTION NOT IMPLEMENTED (connect_msg)\n");
-    exit(0);
+void disconnect_msg(void *socket,int num_players, server_data_t player){
+    int rc;
+    rc = zmq_send(socket,&player,sizeof(player),0);
+    if (rc == -1){
+        mvprintw(0,0,"--- ERROR ---\nFAILED TO SEND MESSAGE (disconnect_msg)");
+        exit(0);
+    }
+
 }
 
+void new_position(int* x, int *y, directions_ direction){
+    switch (direction)
+    {
+    case UP:
+        (*x) --;
+        if(*x ==0)
+            *x = 2;
+        break;
+    case DOWN:
+        (*x) ++;
+        if(*x ==WINDOW_SIZE-1)
+            *x = WINDOW_SIZE-3;
+        break;
+    case LEFT:
+        (*y) --;
+        if(*y ==0)
+            *y = 2;
+        break;
+    case RIGHT:
+        (*y) ++;
+        if(*y ==WINDOW_SIZE-1)
+            *y = WINDOW_SIZE-3;
+        break;
+    case ZAP:
+        //Para Miguel elaborar
+    default:
+        break;
+    }
+
+}
 
 int main(){	
     int rc, num_players = 0;
@@ -54,7 +100,7 @@ int main(){
     /* Inicialises the vector player with the carecters and inicial positions */
     for (int i = 0; i < 9; i++){
         players[i].ch = 'A' + i;
-        players[i].id = -1;
+        players[i].id = -1 + i;
         switch (players[i].ch){
             case 'A':
                 players[i].x = 9;
@@ -117,10 +163,26 @@ int main(){
         printf("--- ERROR ---\nBINDING TO PORT %d FAILED\n", PORT_SP);
         exit(0);
     } 
+
+
+    // ncurses initialization
+	initscr();		    	
+	cbreak();				
+    keypad(stdscr, TRUE);   
+	noecho();		
+
+
+    /* creates a window and draws a border */
+    WINDOW * my_win = newwin(WINDOW_SIZE, WINDOW_SIZE, 0, 0);
+    box(my_win, 0 , 0);	
+	wrefresh(my_win);
+
+
+
     while (1){
         rc = zmq_recv(responder_RR, &message, sizeof(remote_char_t), 0);
         if (rc == -1){
-            printf("--- ERROR ---\nFAILED TO RECEIVE MESSAGE\n");
+            mvprintw(0,0,"--- ERROR ---\nFAILED TO RECEIVE MESSAGE");
             exit(0);
         }
         
@@ -128,18 +190,51 @@ int main(){
             num_players = connect_msg(responder_RR, num_players, players[num_players]);
         }
         else if (message.msg_type == 1){
-            movement_msg();
+            movement_msg(responder_RR, num_players, players[num_players]);
+            movement_msg(responder_SP, num_players, players[num_players]);
+
+            for (int i = 0; i < num_players; i++){
+                if (players[i].ch == message.ch){
+                    if(players[i].id == message.id) {
+                    //deletes old place 
+                    wmove(my_win, players[i].x, players[i].y);
+                    waddch(my_win,' ');
+                    new_position(&players[i].x, &players[i].y, message.direction);
+                    // draw mark on new position 
+                    wmove(my_win, players[i].x, players[i].y);
+                    waddch(my_win,players[i].ch| A_BOLD);
+                    }
+                }
+            }
         }
         else if (message.msg_type == 2){
-            zap_msg();
+            zap_msg(responder_RR, num_players, players[num_players]);
+            zap_msg(responder_SP, num_players, players[num_players]);
+            //zap para te entreteres
         }
         else if (message.msg_type == 3){
-            disconnect_msg();
+            disconnect_msg(responder_RR, num_players, players[num_players]);
+            disconnect_msg(responder_SP, num_players, players[num_players]);
+            for (int i = 0; i < num_players; i++){
+                if (players[i].ch == message.ch){
+                    if(players[i].id == message.id) {
+                    //deletes the player 
+                    wmove(my_win, players[i].x, players[i].y);
+                    waddch(my_win,' ');
+                    // falta remover jogador da lista
+                    }
+                }
+            }
         }
         else {
-            printf("--- ERROR ...\nINVALID MESSAGE TYPE\n");
+            mvprintw(0,0,"--- ERROR ...\nINVALID MESSAGE TYPE");
             exit(0);
         }
+        wrefresh(my_win);		
+
         
     }
+
+    endwin(); // End curses mode
+    return 0;
 }
