@@ -23,7 +23,7 @@ int main()
     rc = zmq_connect (requester,buffer);
 
     if (rc == -1){
-        printf("--- ERROR ---\nBinding to port %d failed\n",PORT_RR);
+        printf("--- ERROR ---\nBINDING TO PORT %d FAILED\n",PORT_RR);
     }
 
 
@@ -33,12 +33,13 @@ int main()
     printf("Connecting...\n");
     zmq_send (requester, &message, sizeof(message), 0);
     zmq_recv (requester, &resp, sizeof(resp), 0);
-    if(strlen(resp) < 1) {
-        strcpy(message.ch,resp); // Save player character to the struct
+    if(strcmp(resp, "-1") != 0) {
+        sscanf(resp, "%c, %d", &message.ch, &message.id); // Save player character to the struct
         printf("Connected\n");
     }
     else {
-        printf("--- ERROR ---\nMAXIMUM NUMBER OF PLAYERS REACHED\n"); 
+        printf("--- ERROR ---\nMAXIMUM NUMBER OF PLAYERS REACHED\n");
+        exit(1);
     }
     
 
@@ -52,7 +53,7 @@ int main()
 
     //TODO_9
     // prepare the movement message
-    m.msg_type = 1;
+    message.msg_type = 1;
     //m.ch = ch;
     
     int key;
@@ -66,25 +67,25 @@ int main()
             mvprintw(0,0,"%d Left arrow is pressed", n);
             //TODO_9
             // prepare the movement message
-           m.direction = LEFT;
+           message.direction = LEFT;
             break;
         case KEY_RIGHT:
             mvprintw(0,0,"%d Right arrow is pressed", n);
             //TODO_9
             // prepare the movement message
-            m.direction = RIGHT;
+            message.direction = RIGHT;
             break;
         case KEY_DOWN:
             mvprintw(0,0,"%d Down arrow is pressed", n);
             //TODO_9
             // prepare the movement message
-           m.direction = DOWN;
+           message.direction = DOWN;
             break;
         case KEY_UP:
             mvprintw(0,0,"%d :Up arrow is pressed", n);
             //TODO_9
             // prepare the movement message
-            m.direction = UP;
+            message.direction = UP;
             break;
 
         default:
@@ -95,8 +96,8 @@ int main()
         //TODO_10
         //send the movement message
          if (key != 'x'){
-            zmq_send (requester, &m, sizeof(m), 0);
-            zmq_recv (requester, &res, sizeof(res), 0);
+            zmq_send (requester, &message, sizeof(message), 0);
+            zmq_recv (requester, &resp, sizeof(resp), 0);
         }
         refresh();			/* Print it on to the real screen */
     }while(key != 27);
