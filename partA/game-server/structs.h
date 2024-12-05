@@ -3,9 +3,12 @@
 #include <ncurses.h>
 #include <string.h>
 #include <zmq.h>
-
-
+#include <unistd.h>
+#ifndef STRUCTS_H
+#define STRUCTS_H
 #define  WINDOW_SIZE 20
+
+
 
 /* Header file containing structs, definition of sockets and ip adrress */
 
@@ -57,3 +60,4 @@ typedef struct alien_data_t_ {
 
 }alien_data_t;
 
+#endif //STRUCTS_H

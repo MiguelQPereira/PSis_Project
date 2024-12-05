@@ -1,4 +1,4 @@
-#include "structs.h"
+#include "display.h"
 
 void outer_space_update( int type, void *socket, void* entity, int x_old, int y_old, int zap) {
     
