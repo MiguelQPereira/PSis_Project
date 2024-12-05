@@ -13,6 +13,7 @@
 int main()
 {
     int rc;
+    remote_char_t message;
     char buffer[100];
     char resp[100];
     int score = 0;
@@ -29,14 +30,22 @@ int main()
 
 
     // Send connection message
-    remote_char_t message;
     message.msg_type = 0;
     printf("Connecting...\n");
-    zmq_send (requester, &message, sizeof(message), 0);
-    zmq_recv (requester, &resp, sizeof(resp), 0);
+    rc = zmq_send (requester, &message, sizeof(message), 0);
+    if (rc == -1){
+            printf("--- ERROR ---\nFAILED TO SEND MESSAGE\n");
+            exit(0);
+        }
+    rc = zmq_recv (requester, &resp, sizeof(resp), 0);
+    if (rc == -1){
+            printf("--- ERROR ---\nFAILED TO RECEIVE MESSAGE\n");
+            exit(0);
+        }
     if(strcmp(resp, "-1") != 0) {
         sscanf(resp, "%c, %d", &message.ch, &message.id); // Save player character to the struct
         printf("Connected\nYour player character is: %c\n",message.ch);
+        sleep(2);
     }
     else {
         printf("--- ERROR ---\nMAXIMUM NUMBER OF PLAYERS REACHED\n");
@@ -146,7 +155,7 @@ int main()
         }
 
         //send the movement message
-         if (key != 'x'){
+        if (key != 'x'){
             zmq_send (requester, &message, sizeof(message), 0);
             zmq_recv (requester, &score, sizeof(int), 0);
             mvprintw(10,10,"Your score: %d",score);
@@ -157,11 +166,12 @@ int main()
         }
 
         
-        refresh();			/* Print it on to the real screen */
+        refresh(); //Print it on to the real screen 
+
     }while(key != 113 && key != 81);
     
     
-  	endwin();			/* End curses mode		  */
+  	endwin(); // End curses mode
 
     // Close socket in case of disconnect
     zmq_close (requester);
