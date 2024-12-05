@@ -1,16 +1,7 @@
-#include <ncurses.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>  
-#include <stdlib.h>
-#include <zmq.h>
-#include <assert.h>
-
+#include "display.h"
 #include "structs.h"
 
-
-int display (){
+int display (int type, void* entity, int x_old, int y_old, int zap){
 
     initscr();		    	
 	cbreak();				
@@ -31,64 +22,33 @@ int display (){
     mvaddch(11, 0, '0');
     mvaddch(21, 0, '0');
 
+
+    if (type == 0){
+        alien_data_t * alien;
+        alien = entity;
+        mvwaddch(space, y_old, x_old, ' ');
+        mvwaddch(space, alien->y, alien->x, '*');
+    }
+    else if (type == 1){
+        player_data_t * player;
+        player = entity;
+        mvwaddch(space, y_old, x_old, ' ');
+        mvwaddch(space, player->y, player->x, player->ch);
+        mvwprintw(score_board, player->ch - 60, 3, "%c - %d", player->ch, player->score);
+    }
+    else if (type == 2){
+        return 0;
+    }
+    else if (type == 3){
+        mvwaddch(space, y_old, x_old, ' ');
+    }
+
+
     refresh();
     wrefresh(space);
     wrefresh(score_board);
 
-    sleep(100);
     endwin();			/* Termina o modo curses */
     return 1;
 }
 
-int main(){
-
-    server_data_t players[8];
-    for (int i = 0; i < 9; i++){
-        players[i].ch = 'A' + i;
-        players[i].id = -1;
-        switch (players[i].ch){
-            case 'A':
-                players[i].x = 9;
-                players[i].y = 1;
-                break;
-            case 'B':
-                players[i].x = 18;
-                players[i].y = 9;
-                break;
-            case 'C':
-                players[i].x = 9;
-                players[i].y = 18;
-                break;
-            case 'D':
-                players[i].x = 1;
-                players[i].y = 9;
-                break;
-            case 'E':
-                players[i].x = 9;
-                players[i].y = 0;
-                break;
-            case 'F':
-                players[i].x = 19;
-                players[i].y = 18;
-                break;
-            case 'G':
-                players[i].x = 9;
-                players[i].y = 19;
-                break;
-            case 'H':
-                players[i].x = 0;
-                players[i].y = 9;
-                break;
-            
-            default:
-                break;
-        }
-        
-    }
-
-    players[0].id = 1;
-    players[1].id = 1;
-
-    display();
-    return 1;
-}

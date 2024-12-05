@@ -1,3 +1,12 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <ncurses.h>
+#include <string.h>
+#include <zmq.h>
+
+
+#define  WINDOW_SIZE 20
+
 /* Header file containing structs, definition of sockets and ip adrress */
 
 int PORT_RR = 5555; // REQ-REP
@@ -31,10 +40,20 @@ typedef struct remote_char_t_{
 } remote_char_t;
 
 // Struct containing the relevant information of a player
-typedef struct server_data_t_{
+typedef struct player_data_t_{
     int id; // personal identifier given by server at run time to a client
     char ch; // caracter that the player controls
     int score; // Saves the players scores 
     int x,y; // position of the caracter
 
-} server_data_t;
+} player_data_t;
+
+
+// Struct containing the relevant information of a alien
+typedef struct alien_data_t_ {
+
+    int x,y; // Positions of the aliens
+    int hp; // 0 -> Dead // 1 -> Alive
+
+}alien_data_t;
+

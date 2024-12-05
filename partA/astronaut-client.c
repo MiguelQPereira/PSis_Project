@@ -1,14 +1,4 @@
-#include <ncurses.h>
 #include "structs.h"
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>  
-#include <ctype.h> 
-#include <stdlib.h>
-#include <zmq.h>
-#include <stdio.h>
-#include <string.h>
 
 int main()
 {
@@ -162,7 +152,7 @@ int main()
         }
 
         else {
-            mvprintw(0,0,"--- UPS ---\nTry again");
+            mvprintw(0,0,"<--- UPS ---> Try again");
         }
 
         

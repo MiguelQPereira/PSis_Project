@@ -1,19 +1,80 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <ncurses.h>
-#include <string.h>
-#include <zmq.h>
 #include "structs.h"
-#define  WINDOW_SIZE 20
 
+void outer_space_update( int type, void *socket, void* entity, int x_old, int y_old, int zap) {
+    
+    int rc, xy[2];
+    xy[0] = x_old;
+    xy[1] = y_old;
+    
+    // alien movement
+    if (type == 0){
+        rc = zmq_send (socket, "ALIEN", strlen ("ALIEN"), ZMQ_SNDMORE);
+        if (rc == -1){
+            mvprintw(0,0,"--- ERROR ---\nFAILED TO PUBLISH MESSAGE");
+            exit(0);
+        }
 
-int connect_msg (void* socket, int num_players, server_data_t player){
+        rc = zmq_send(socket, entity, sizeof(entity), ZMQ_SNDMORE);
+        if (rc == -1){
+            mvprintw(0,0,"--- ERROR ---\nFAILED TO PUBLISH MESSAGE");
+            exit(0);
+        }
+
+        rc = zmq_send(socket, xy, sizeof(xy), 0);
+        if (rc == -1){
+            mvprintw(0,0,"--- ERROR ---\nFAILED TO PUBLISH MESSAGE");
+            exit(0);
+        }
+    }
+    // player movement
+    else if(type == 1){
+        rc = zmq_send (socket, "PLAYER", strlen ("PLAYER"), ZMQ_SNDMORE);
+        if (rc == -1){
+            mvprintw(0,0,"--- ERROR ---\nFAILED TO PUBLISH MESSAGE");
+            exit(0);
+        }
+
+        rc = zmq_send(socket, entity, sizeof(player_data_t), ZMQ_SNDMORE);
+        if (rc == -1){
+            mvprintw(0,0,"--- ERROR ---\nFAILED TO PUBLISH MESSAGE");
+            exit(0);
+        }
+        rc = zmq_send(socket, xy, sizeof(xy), 0);
+        if (rc == -1){
+            mvprintw(0,0,"--- ERROR ---\nFAILED TO PUBLISH MESSAGE");
+            exit(0);
+        }
+    }
+    // zap
+    else if(type == 2){
+
+    }
+    // delete entity
+    else if(type == 3) {
+
+        rc = zmq_send (socket, "DISCONNECT", strlen ("DISCONNECT"), ZMQ_SNDMORE);
+        if (rc == -1){
+            mvprintw(0,0,"--- ERROR ---\nFAILED TO PUBLISH MESSAGE");
+            exit(0);
+        }
+
+        rc = zmq_send(socket, xy, sizeof(xy), 0);
+        if (rc == -1){
+            mvprintw(0,0,"--- ERROR ---\nFAILED TO PUBLISH MESSAGE");
+            exit(0);
+       }        
+        
+    }
+}
+
+int connect_msg (void* socket, int num_players, player_data_t player){
     char resp[100];
     int rc;
     /* If a new player can join, generate a new id and send his caracter and id*/
     if (num_players < 9){
         player.id = random() % 1000;
         sprintf(resp, "%c, %d", player.ch, player.id);
+        outer_space_update(1,socket,(void*)&player,player.x,player.y,0);
         num_players++;
     }
     /* If can't join send -1*/
@@ -30,7 +91,7 @@ int connect_msg (void* socket, int num_players, server_data_t player){
     return num_players; // return new num_players or -1 if can't join
 }
 
-void movement_msg(void *socket,int num_players, server_data_t player){
+void movement_msg(void *socket,int num_players, player_data_t player){
     int rc;
     rc = zmq_send(socket,&player,sizeof(player),0);
     if (rc == -1){
@@ -40,7 +101,7 @@ void movement_msg(void *socket,int num_players, server_data_t player){
 
 }
 
-void zap_msg(void *socket,int num_players, server_data_t player){
+void zap_msg(void *socket,int num_players, player_data_t player){
     int rc;
     rc = zmq_send(socket,&player,sizeof(player),0);
     if (rc == -1){
@@ -50,7 +111,7 @@ void zap_msg(void *socket,int num_players, server_data_t player){
 
 }
 
-void disconnect_msg(void *socket,int num_players, server_data_t player){
+void disconnect_msg(void *socket,int num_players, player_data_t player){
     int rc;
     rc = zmq_send(socket,&player,sizeof(player),0);
     if (rc == -1){
@@ -85,6 +146,8 @@ void new_position(int* x, int *y, directions_ direction){
         break;
     case ZAP:
         //Para Miguel elaborar
+    case QUIT:
+
     default:
         break;
     }
@@ -95,12 +158,12 @@ int main(){
     int rc, num_players = 0;
     char buffer[100];
     remote_char_t message;
-    server_data_t players[8];
+    player_data_t players[8];
 
     /* Inicialises the vector player with the carecters and inicial positions */
     for (int i = 0; i < 9; i++){
         players[i].ch = 'A' + i;
-        players[i].id = -1 + i;
+        players[i].id = -1;
         switch (players[i].ch){
             case 'A':
                 players[i].x = 9;
@@ -187,44 +250,18 @@ int main(){
         }
         
         if (message.msg_type == 0){
-            num_players = connect_msg(responder_RR, num_players, players[num_players]);
+            num_players = connect_msg(responder_RR, num_players, players[num_players]); // Send connect message to astronaut client
+            
         }
         else if (message.msg_type == 1){
-            movement_msg(responder_RR, num_players, players[num_players]);
-            movement_msg(responder_SP, num_players, players[num_players]);
+            movement_msg(responder_RR, num_players, players[num_players]); //Send movement message to astronaut client
 
-            for (int i = 0; i < num_players; i++){
-                if (players[i].ch == message.ch){
-                    if(players[i].id == message.id) {
-                    //deletes old place 
-                    wmove(my_win, players[i].x, players[i].y);
-                    waddch(my_win,' ');
-                    new_position(&players[i].x, &players[i].y, message.direction);
-                    // draw mark on new position 
-                    wmove(my_win, players[i].x, players[i].y);
-                    waddch(my_win,players[i].ch| A_BOLD);
-                    }
-                }
-            }
         }
         else if (message.msg_type == 2){
-            zap_msg(responder_RR, num_players, players[num_players]);
-            zap_msg(responder_SP, num_players, players[num_players]);
-            //zap para te entreteres
+            zap_msg(responder_RR, num_players, players[num_players]); //Send zap message to astronaut client
         }
         else if (message.msg_type == 3){
-            disconnect_msg(responder_RR, num_players, players[num_players]);
-            disconnect_msg(responder_SP, num_players, players[num_players]);
-            for (int i = 0; i < num_players; i++){
-                if (players[i].ch == message.ch){
-                    if(players[i].id == message.id) {
-                    //deletes the player 
-                    wmove(my_win, players[i].x, players[i].y);
-                    waddch(my_win,' ');
-                    // falta remover jogador da lista
-                    }
-                }
-            }
+            disconnect_msg(responder_RR, num_players, players[num_players]); //Send disconnect message to astronaut client
         }
         else {
             mvprintw(0,0,"--- ERROR ...\nINVALID MESSAGE TYPE");
@@ -236,5 +273,7 @@ int main(){
     }
 
     endwin(); // End curses mode
+    zmq_close (responder_RR);
+    zmq_ctx_destroy (context_RR);
     return 0;
 }
