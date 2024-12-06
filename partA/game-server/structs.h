@@ -4,6 +4,7 @@
 #include <string.h>
 #include <zmq.h>
 #include <unistd.h>
+#include <time.h>
 
 #ifndef STRUCTS_H
 #define STRUCTS_H
@@ -47,7 +48,9 @@ typedef struct remote_char_t_{
 typedef struct player_data_t_{
     int id; // personal identifier given by server at run time to a client
     char ch; // caracter that the player controls
-    int score; // Saves the players scores 
+    int score; // Saves the players scores
+    time_t stun;
+    time_t last_zap;
     int x,y; // position of the caracter
 
 } player_data_t;

@@ -11,15 +11,15 @@ int display (int type, void* entity, int x_old, int y_old, int zap, WINDOW * spa
     else if (type == 1){
         player_data_t * player;
         player = entity;
-        mvwaddch(space, y_old, x_old, ' ');
-        mvwaddch(space, player->y, player->x, player->ch);
-        mvwprintw(score_board, player->ch - 60, 3, "%c - %d", player->ch, player->score);
+        mvwaddch(space, y_old+1, x_old+1, ' ');
+        mvwaddch(space, player->y+1, player->x+1, player->ch);
+        mvwprintw(score_board, player->ch - 61, 4, "%c - %d", player->ch, player->score);
     }
     else if (type == 2){
         return 0;
     }
     else if (type == 3){
-        mvwaddch(space, y_old, x_old, ' ');
+        mvwaddch(space, y_old+1, x_old+1, ' ');
     }
 
 

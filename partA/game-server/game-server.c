@@ -100,24 +100,24 @@ void new_position(int x, int y, directions_ direction, player_data_t * player){
     switch (direction)
     {
     case UP:
-        x --;
-        if(x ==0)
-            x = 2;
-        break;
-    case DOWN:
-        x ++;
-        if(x ==WINDOW_SIZE-1)
-            x = WINDOW_SIZE-3;
-        break;
-    case LEFT:
-        (y) --;
-        if(y ==0)
+        y --;
+        if(y == 1)
             y = 2;
         break;
-    case RIGHT:
-        (y) ++;
-        if(y ==WINDOW_SIZE-1)
+    case DOWN:
+        y ++;
+        if(y == WINDOW_SIZE-2)
             y = WINDOW_SIZE-3;
+        break;
+    case LEFT:
+        x --;
+        if(x ==1)
+            x = 2;
+        break;
+    case RIGHT:
+        x ++;
+        if(x ==WINDOW_SIZE-2)
+            x = WINDOW_SIZE-3;
         break;
     case ZAP:
         //Para Miguel elaborar
@@ -156,9 +156,19 @@ void movement_msg(void *socket, player_data_t players[8], remote_char_t message,
 
 }
 
-void zap_msg(void *socket,int num_players, player_data_t player, WINDOW * space, WINDOW * score_board){
+void zap_msg(void *socket, player_data_t players[8], remote_char_t message, WINDOW * space, WINDOW * score_board, time_t time){
+    int i = 0;
     int rc;
-    rc = zmq_send(socket,&player,sizeof(player),0);
+
+    while (message.ch != players[i].ch && message.id != players[i].id && i < 8)
+        i++;
+    if (i == 8)
+        return;
+
+
+
+
+    rc = zmq_send(socket,&players[i].score,sizeof(int),0);
     if (rc == -1){
         mvprintw(0,0,"--- ERROR ---\nFAILED TO SEND MESSAGE (zap_msg)");
         exit(0);
@@ -195,6 +205,7 @@ int disconnect_msg(void *socket,int num_players, player_data_t players[8], remot
 int main(){	
     int rc, num_players = 0;
     char buffer[100];
+    time_t row_zap[16], col_zap[16], msg_time;
     remote_char_t message;
     player_data_t players[8];
 
@@ -202,38 +213,39 @@ int main(){
     for (int i = 0; i < 9; i++){
         players[i].ch = 'A' + i;
         players[i].id = -1;
+        players[i].score = 0;
         switch (players[i].ch){
             case 'A':
-                players[i].x = 1;
+                players[i].x = 0;
                 players[i].y = 9;
                 break;
             case 'B':
-                players[i].x = 18;
-                players[i].y = 9;
-                break;
-            case 'C':
-                players[i].x = 9;
-                players[i].y = 18;
-                break;
-            case 'D':
-                players[i].x = 1;
-                players[i].y = 9;
-                break;
-            case 'E':
-                players[i].x = 9;
-                players[i].y = 0;
-                break;
-            case 'F':
-                players[i].x = 19;
-                players[i].y = 18;
-                break;
-            case 'G':
                 players[i].x = 9;
                 players[i].y = 19;
                 break;
-            case 'H':
-                players[i].x = 0;
+            case 'C':
+                players[i].x = 19;
+                players[i].y = 10;
+                break;
+            case 'D':
+                players[i].x = 10;
+                players[i].y = 0;
+                break;
+            case 'E':
+                players[i].x = 1;
+                players[i].y = 10;
+                break;
+            case 'F':
+                players[i].x = 10;
+                players[i].y = 18;
+                break;
+            case 'G':
+                players[i].x = 18;
                 players[i].y = 9;
+                break;
+            case 'H':
+                players[i].x = 9;
+                players[i].y = 1;
                 break;
             
             default:
@@ -286,7 +298,7 @@ int main(){
     mvaddch(11, 0, '0');
     mvaddch(21, 0, '0');
 
-    mvwprintw(score_board, 2, 2, "SCORE");
+    mvwprintw(score_board, 2, 4, "SCORE");
 
     refresh();
     wrefresh(space);
@@ -294,8 +306,9 @@ int main(){
 
     while (1){
         rc = zmq_recv(responder_RR, &message, sizeof(remote_char_t), 0);
-        mvprintw(0,0,"New message");
-        refresh();
+
+        msg_time = time(NULL);
+
         if (rc == -1){
             mvprintw(0,0,"--- ERROR ---\nFAILED TO RECEIVE MESSAGE");
             exit(0);
@@ -307,12 +320,10 @@ int main(){
         }
         else if (message.msg_type == 1){
             movement_msg(responder_RR, players, message,space, score_board); //Send movement message to astronaut client
-            mvprintw(0,0,"Out of movement_msg");
-            refresh();
 
         }
         else if (message.msg_type == 2){
-            zap_msg(responder_RR, num_players, players[num_players], space, score_board); //Send zap message to astronaut client
+            zap_msg(responder_RR, players, message, space, score_board, msg_time); //Send zap message to astronaut client
         }
         else if (message.msg_type == 3){
             num_players = disconnect_msg(responder_RR, num_players, players, message, space, score_board); //Send disconnect message to astronaut client

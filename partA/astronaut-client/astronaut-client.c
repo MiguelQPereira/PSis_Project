@@ -62,8 +62,8 @@ int main()
                 // This letters correspond to the top and bottom astronauts in the display, so, they are the only ones that can move 
                 // to the left or right 
                 if(message.ch == 'B' || message.ch == 'D' || message.ch == 'F' || message.ch == 'H') {
-
-                    mvprintw(0,0,"%d Left arrow is pressed", n);
+                    message.msg_type = 1;
+                    mvprintw(0,0,"%d Left arrow is pressed             ", n);
                     // prepare the movement message
                     message.direction = LEFT;
                     break;
@@ -77,8 +77,8 @@ int main()
                 // This letters correspond to the top and bottom astronauts in the display, so, they are the only ones that can move 
                 // to the left or right
                 if(message.ch == 'B' || message.ch == 'D' || message.ch == 'F' || message.ch == 'H') {
-
-                    mvprintw(0,0,"%d Right arrow is pressed", n);
+                    message.msg_type = 1;
+                    mvprintw(0,0,"%d Right arrow is pressed                ", n);
                     // prepare the movement message
                     message.direction = RIGHT;
                     break;
@@ -91,8 +91,8 @@ int main()
                 // This letters correspond to the left and right astronauts in the display, so, they are the only ones that can move 
                 // up and down
                 if(message.ch == 'A' || message.ch == 'C' || message.ch == 'E' || message.ch == 'G') {
-
-                    mvprintw(0,0,"%d Down arrow is pressed", n);
+                    message.msg_type = 1;
+                    mvprintw(0,0,"%d Down arrow is pressed             ", n);
                     // prepare the movement message
                     message.direction = DOWN;
                     break;
@@ -105,8 +105,8 @@ int main()
                 // This letters correspond to the left and right astronauts in the display, so, they are the only ones that can move 
                 // up and down
                 if(message.ch == 'A' || message.ch == 'C' || message.ch == 'E' || message.ch == 'G') {
-
-                    mvprintw(0,0,"%d Up arrow is pressed", n);
+                    message.msg_type = 1;
+                    mvprintw(0,0,"%d Up arrow is pressed                  ", n);
                     // prepare the movement message
                     message.direction = UP;
                     break;
@@ -117,21 +117,21 @@ int main()
                 }
 
             case ' ':
-                mvprintw(0,0,"%d Zapping", n);
+                mvprintw(0,0,"%d Zapping                  ", n);
                 // prepare ZAP message
                 message.direction = ZAP;
                 message.msg_type = 2; // sending zap
                 break;  
 
             case 'q':
-                mvprintw(0,0,"%d 'q' Disconnecting...", n);
+                mvprintw(0,0,"%d 'q' Disconnecting...                    ", n);
                 // prepare QUIT message
                 message.direction = QUIT;
                 message.msg_type = 3; // sending quit message 
                 break;
 
             case 'Q':
-                mvprintw(0,0,"%d 'Q' Disconnecting...", n);
+                mvprintw(0,0,"%d 'Q' Disconnecting...                       ", n);
                 // prepare QUIT message
                 message.direction = QUIT;
                 message.msg_type = 3; // sending quit message 
