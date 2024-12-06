@@ -1,13 +1,13 @@
 #include "display.h"
 
-int display (int type, void* entity, int x_old, int y_old, int zap){
+int display (int type, void* entity, int x_old, int y_old, int zap, WINDOW * space, WINDOW * score_board){
 
     initscr();		    	
 	cbreak();				
     keypad(stdscr, TRUE);   
 	noecho();
 
-    /* creates the windows and draws the borders of the outer-space and the score board */
+    /* creates the windows and draws the borders of the outer-space and the score board 
     WINDOW * space = newwin(22, 22, 1, 1);
     WINDOW * score_board = newwin(22, 22, 1, 24);
     box(space, 0, 0);
@@ -19,7 +19,7 @@ int display (int type, void* entity, int x_old, int y_old, int zap){
         mvaddch(i+11, 0, i+48);
     }
     mvaddch(11, 0, '0');
-    mvaddch(21, 0, '0');
+    mvaddch(21, 0, '0');*/
 
 
     if (type == 0){

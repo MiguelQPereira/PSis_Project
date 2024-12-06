@@ -91,6 +91,8 @@ int connect_msg (void* socket, int num_players, player_data_t players[8]){
         exit(0);
     }
 
+    display(int type);
+
     return num_players; // return new num_players
 }
 
@@ -240,7 +242,6 @@ int main(){
         exit(0);
     } 
 
-    sleep(10);
     // ncurses initialization
 	initscr();		    	
 	cbreak();				
@@ -248,12 +249,25 @@ int main(){
 	noecho();		
 
 
-    /* creates a window and draws a border */
-    WINDOW * my_win = newwin(WINDOW_SIZE, WINDOW_SIZE, 0, 0);
-    box(my_win, 0 , 0);	
-	wrefresh(my_win);
+    /* creates the windows and draws the borders of the outer-space and the score board */
+    WINDOW * space = newwin(22, 22, 1, 1);
+    WINDOW * score_board = newwin(22, 22, 1, 24);
+    box(space, 0, 0);
+    box(score_board, 0, 0);
+    
+    mvprintw(0, 2, "12345678901234567890");
+    for (int i = 1; i < 10; i++){
+        mvaddch(i+1, 0, i+48);
+        mvaddch(i+11, 0, i+48);
+    }
+    mvaddch(11, 0, '0');
+    mvaddch(21, 0, '0');
 
+    mvwprintw(score_board, 2, 2, "SCORE");
 
+    refresh();
+    wrefresh(space);
+    wrefresh(score_board);
 
     while (1){
         rc = zmq_recv(responder_RR, &message, sizeof(remote_char_t), 0);
@@ -279,8 +293,7 @@ int main(){
         else {
             mvprintw(0,0,"--- ERROR ...\nINVALID MESSAGE TYPE");
             exit(0);
-        }
-        wrefresh(my_win);		
+        }		
 
         
     }
