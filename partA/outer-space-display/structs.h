@@ -4,15 +4,18 @@
 #include <string.h>
 #include <zmq.h>
 #include <unistd.h>
+
 #ifndef STRUCTS_H
 #define STRUCTS_H
 #define  WINDOW_SIZE 20
 
+
+
 /* Header file containing structs, definition of sockets and ip adrress */
 
-int PORT_RR = 5555; // REQ-REP
-int PORT_SP = 5554; // SUB-PUB
-char IP_ADRESS[16] = "192.168.1.70"; //Insert the address
+#define PORT_RR  5555 // REQ-REP
+#define PORT_SP  5554 // SUB-PUB
+#define IP_ADRESS  "127.0.0.1" //Insert the address
 
 
 

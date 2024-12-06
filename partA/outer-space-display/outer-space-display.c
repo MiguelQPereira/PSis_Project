@@ -72,7 +72,6 @@ int main (){
 
         }
        
-        free(type);
     }
     
     zmq_close (subscriber);

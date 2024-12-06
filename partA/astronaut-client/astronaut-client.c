@@ -33,9 +33,10 @@ int main()
             exit(0);
         }
     if(strcmp(resp, "-1") != 0) {
+        printf("%s", resp);
         sscanf(resp, "%c, %d", &message.ch, &message.id); // Save player character to the struct
         printf("Connected\nYour player character is: %c\n",message.ch);
-        sleep(2);
+        sleep(5);
     }
     else {
         printf("--- ERROR ---\nMAXIMUM NUMBER OF PLAYERS REACHED\n");
@@ -71,7 +72,7 @@ int main()
             }
             // If you try to move other players than this ones in this direction you will have to try again 
             else {
-                key = 'x';
+                key = 0;
             }
                 
         case KEY_RIGHT:
@@ -79,42 +80,42 @@ int main()
             // to the left or right
             if(message.ch == 'B' || message.ch == 'D' || message.ch == 'F' || message.ch == 'H') {
 
-                mvprintw(0,0,"%d Left arrow is pressed", n);
+                mvprintw(0,0,"%d Right arrow is pressed", n);
                 // prepare the movement message
                 message.direction = LEFT;
                 break;
             }
             // If you try to move other players than this ones in this direction you will have to try again 
             else {
-                key = 'x';
+                key = 0;
             }
         case KEY_DOWN:
             // This letters correspond to the left and right astronauts in the display, so, they are the only ones that can move 
             // up and down
             if(message.ch == 'A' || message.ch == 'C' || message.ch == 'E' || message.ch == 'G') {
 
-                mvprintw(0,0,"%d Left arrow is pressed", n);
+                mvprintw(0,0,"%d Down arrow is pressed", n);
                 // prepare the movement message
                 message.direction = LEFT;
                 break;
             }
             // If you try to move other players than this ones in this direction you will have to try again 
             else {
-                key = 'x';
+                key = 0;
             }
         case KEY_UP:
             // This letters correspond to the left and right astronauts in the display, so, they are the only ones that can move 
             // up and down
             if(message.ch == 'A' || message.ch == 'C' || message.ch == 'E' || message.ch == 'G') {
 
-                mvprintw(0,0,"%d Left arrow is pressed", n);
+                mvprintw(0,0,"%d Up arrow is pressed", n);
                 // prepare the movement message
                 message.direction = LEFT;
                 break;
             }
             // If you try to move other players than this ones in this direction you will have to try again 
             else {
-                key = 'x';
+                key = 0;
             }
 
         case ' ':
@@ -140,12 +141,12 @@ int main()
               
 
         default:
-            key = 'x'; 
+            key = 0; 
             break;
         }
 
         //send the movement message
-        if (key != 'x'){
+        if (key != 0){
             zmq_send (requester, &message, sizeof(message), 0);
             zmq_recv (requester, &score, sizeof(int), 0);
             mvprintw(10,10,"Your score: %d",score);
@@ -158,7 +159,7 @@ int main()
         
         refresh(); //Print it on to the real screen 
 
-    }while(key != 113 && key != 81);
+    }while(key != 'Q' && key != 'q');
     
     
   	endwin(); // End curses mode
@@ -166,6 +167,9 @@ int main()
     // Close socket in case of disconnect
     zmq_close (requester);
     zmq_ctx_destroy (context);
+
+    printf ("===Left game===\nFinal Score: %d", score);
+
 	return 0;
 
 }
