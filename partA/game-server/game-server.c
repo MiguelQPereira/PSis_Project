@@ -67,7 +67,7 @@ void outer_space_update( int type, void *socket, void* entity, int x_old, int y_
     }
 }
 
-int connect_msg (void* socket, int num_players, player_data_t players[8], WINDOW * space, WINDOW * score_board){
+int connect_msg (void* socket, int num_players, player_data_t players[8]){
     char resp[100];
     int rc, counter=0;
     /* If a new player can join, generate a new id and send his caracter and id*/
@@ -77,7 +77,6 @@ int connect_msg (void* socket, int num_players, player_data_t players[8], WINDOW
 
         players[counter].id = random() % 1000;
         sprintf(resp, "%c, %d", players[counter].ch, players[counter].id);
-        //outer_space_update(1,socket,(void*)&player,player.x,player.y,0);
         num_players++;
     }
     /* If can't join send -1*/
@@ -85,13 +84,11 @@ int connect_msg (void* socket, int num_players, player_data_t players[8], WINDOW
         strcpy(resp, "-1");
     }
 
-    zmq_send(socket, resp, sizeof(resp), 0);
+    rc = zmq_send(socket, resp, sizeof(resp), 0);
     if (rc == -1){
         mvprintw(0,0,"--- ERROR ---\nFAILED TO SEND MESSAGE (connect_msg)");
         exit(0);
     }
-
-    display(1, (void*) &players[counter], players[counter].x, players[counter].y, 0, space, score_board);
 
     return num_players; // return new num_players
 }
@@ -134,41 +131,71 @@ void new_position(int x, int y, directions_ direction, player_data_t * player){
 
 }
 
-void movement_msg(void *socket, player_data_t players[8], remote_char_t message, WINDOW * space, WINDOW * score_board){
-    //Needs entity of player, x_old, y_old, flag for zap and two pointers  
-    int xy[2];
-    int i = 0;
+void movement_msg(void *socket, player_data_t players[8], pewpew_t zaps[2][16], remote_char_t message, WINDOW * space, WINDOW * score_board, time_t msg_time){
+    int idx = 0;
     int rc;
 
-    while (message.ch != players[i].ch && message.id != players[i].id && i < 8)
-        i++;
-    if (i == 8)
+    while (message.ch != players[idx].ch && message.id != players[idx].id && idx < 8)
+        idx++;
+    if (idx == 8)
         return;
 
-    rc = zmq_send(socket,&players[i].score,sizeof(int),0);
+    rc = zmq_send(socket,&players[idx].score,sizeof(int),0);
 
-    xy[0] = players[i].x;
-    xy[1] = players[i].y;
+    if (difftime(msg_time, players[idx].stun) < 10)
+        return;
 
-    new_position(xy[0], xy[1],message.direction, &players[i]);
-    
-    display(1, (void*) &players[i], xy[0], xy[1], 0, space, score_board);
+    new_position(players[idx].x, players[idx].y,message.direction, &players[idx]);
+
+    if (players[idx].ch % 2 == 0) {
+        //direction = 1;
+        if (zaps[1][players[idx].x - 2].player != -1 && difftime(msg_time, zaps[1][players[idx].x-2].time) < 0.5){
+            players[idx].stun = msg_time;
+            players[zaps[1][players[idx].x-2].player].score ++;
+        }
+    } else {
+        //direction = 0;
+        if (zaps[0][players[idx].y - 2].player != -1 && difftime(msg_time, zaps[1][players[idx].y-2].time) < 0.5){
+            players[idx].stun = msg_time;
+            players[zaps[0][players[idx].y-2].player].score ++;
+        }
+    }
 
 }
 
-void zap_msg(void *socket, player_data_t players[8], remote_char_t message, WINDOW * space, WINDOW * score_board, time_t time){
-    int i = 0;
-    int rc;
+void zap_msg(void *socket, player_data_t players[8], remote_char_t message, WINDOW * space, WINDOW * score_board, time_t time, pewpew_t zaps[2][16], time_t msg_time){
+    int idx = 0, direction, rc;
 
-    while (message.ch != players[i].ch && message.id != players[i].id && i < 8)
-        i++;
-    if (i == 8)
+    while (message.ch != players[idx].ch && message.id != players[idx].id && idx < 8)
+        idx++;
+    if (idx == 8)
         return;
 
+    if (players[idx].ch % 2 == 0) {
+        direction = 1;
+        zaps[direction][players[idx].x-2].player = idx;
+        zaps[direction][players[idx].x-2].time = time;
 
+        for (int i =0; i<8; i++){
+            if(players[i].id != -1 && players[i].x == players[idx].x && i != idx){
+                players[i].stun = time;
+            }
+        }
+    } else {
+        direction = 0;
+        zaps[direction][players[idx].y-2].player = idx;
+        zaps[direction][players[idx].y-2].time = time;
 
+        for (int i =0; i<8; i++){
+            if(players[i].id != -1 && players[i].y == players[idx].y && i != idx){
+                players[i].stun = time;
+            }
+        }
+    }
 
-    rc = zmq_send(socket,&players[i].score,sizeof(int),0);
+    players[idx].last_zap = time;
+
+    rc = zmq_send(socket,&players[idx].score,sizeof(int),0);
     if (rc == -1){
         mvprintw(0,0,"--- ERROR ---\nFAILED TO SEND MESSAGE (zap_msg)");
         exit(0);
@@ -182,7 +209,7 @@ int disconnect_msg(void *socket,int num_players, player_data_t players[8], remot
     while (message.ch != players[i].ch && message.id != players[i].id && i < 8)
         i++;
     if (i == 8)
-        return;
+        return num_players;
     
     rc = zmq_send(socket,&players[i].score,sizeof(int),0);
     if (rc == -1){
@@ -194,8 +221,6 @@ int disconnect_msg(void *socket,int num_players, player_data_t players[8], remot
     players[i].score = 0;
 
     num_players--;
-    
-    display(3, (void*) &players[i], players[i].x, players[i].y, 0, space, score_board);
 
 
     return num_players;
@@ -205,15 +230,20 @@ int disconnect_msg(void *socket,int num_players, player_data_t players[8], remot
 int main(){	
     int rc, num_players = 0;
     char buffer[100];
-    time_t row_zap[16], col_zap[16], msg_time;
+    time_t msg_time;
+    pewpew_t  zaps[2][16];
     remote_char_t message;
     player_data_t players[8];
+    alien_data_t aliens [N_ALIENS];
+    srandom(time(NULL));
 
-    /* Inicialises the vector player with the carecters and inicial positions */
+    /* Inicialises the vector players with the carecters and inicial positions */
     for (int i = 0; i < 9; i++){
         players[i].ch = 'A' + i;
         players[i].id = -1;
         players[i].score = 0;
+        players[i].stun = 0;
+        players[i].last_zap = 0;
         switch (players[i].ch){
             case 'A':
                 players[i].x = 0;
@@ -252,6 +282,21 @@ int main(){
                 break;
         }
         
+    }
+
+    /* Inicialises the vector aliens with hp=1 and random inicial positions */
+    for (int i = 0; i < N_ALIENS; i++){
+        aliens[i].hp = 1;
+        aliens[i].x = random()%16 + 2;
+        aliens[i].y = random()%16 + 2;
+    }
+
+    /* Inicialises the vector zaps with player = -1 and time = 0 */
+    for(int i=0; i<2; i++){
+        for (int j=0; j<16; j++){
+            zaps[i][j].player = -1;
+            zaps[i][j].time = 0;
+        }
     }
 
     /* Declare and bind socket to comunicate with astronauts using the REP/REQ patern */
@@ -305,9 +350,18 @@ int main(){
     wrefresh(score_board);
 
     while (1){
+        
         rc = zmq_recv(responder_RR, &message, sizeof(remote_char_t), 0);
 
         msg_time = time(NULL);
+
+        /*for (int i=0; i<2; i++){
+            for (int j=0; j<16; j++){
+                if (difftime(msg_time, zaps[i][j].time) > 0.5 && zaps[i][j].time != 0.0){
+                    zaps[i][j].time = 0.0;
+                }    
+            }
+        }*/
 
         if (rc == -1){
             mvprintw(0,0,"--- ERROR ---\nFAILED TO RECEIVE MESSAGE");
@@ -315,22 +369,26 @@ int main(){
         }
         
         if (message.msg_type == 0){
-            num_players = connect_msg(responder_RR, num_players, players, space, score_board); // Send connect message to astronaut client
+            num_players = connect_msg(responder_RR, num_players, players); // Send connect message to astronaut client
             
         }
         else if (message.msg_type == 1){
-            movement_msg(responder_RR, players, message,space, score_board); //Send movement message to astronaut client
+            movement_msg(responder_RR, players, zaps, message,space, score_board, msg_time); //Send movement message to astronaut client
 
         }
         else if (message.msg_type == 2){
-            zap_msg(responder_RR, players, message, space, score_board, msg_time); //Send zap message to astronaut client
+            zap_msg(responder_RR, players, message, space, score_board, msg_time, zaps, msg_time); //Send zap message to astronaut client
         }
         else if (message.msg_type == 3){
             num_players = disconnect_msg(responder_RR, num_players, players, message, space, score_board); //Send disconnect message to astronaut client
         }
         else {
             mvprintw(0,0,"--- ERROR ...\nINVALID MESSAGE TYPE");
-        }		 
+        }	
+
+        /* TO DO : timer of lazers */
+
+        display(players, aliens, zaps, msg_time, space, score_board);	 
     }
 
     endwin(); // End curses mode

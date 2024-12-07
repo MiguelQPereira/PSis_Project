@@ -9,6 +9,7 @@
 #ifndef STRUCTS_H
 #define STRUCTS_H
 #define  WINDOW_SIZE 20
+#define N_ALIENS 85
 
 
 
@@ -63,5 +64,12 @@ typedef struct alien_data_t_ {
     int hp; // 0 -> Dead // 1 -> Alive
 
 }alien_data_t;
+
+
+// Struct that connects a zap in space to the player that shoot it
+typedef struct pewpew_t_ {
+    time_t time;
+    int player;
+}pewpew_t;
 
 #endif //STRUCTS_H
