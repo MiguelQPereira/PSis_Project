@@ -151,13 +151,11 @@ void movement_msg(void *socket, player_data_t players[8], pewpew_t zaps[2][16], 
         //direction = 1;
         if (zaps[1][players[idx].x - 2].player != -1 && difftime(msg_time, zaps[1][players[idx].x-2].time) < 0.5){
             players[idx].stun = msg_time;
-            players[zaps[1][players[idx].x-2].player].score ++;
         }
     } else {
         //direction = 0;
         if (zaps[0][players[idx].y - 2].player != -1 && difftime(msg_time, zaps[1][players[idx].y-2].time) < 0.5){
             players[idx].stun = msg_time;
-            players[zaps[0][players[idx].y-2].player].score ++;
         }
     }
 
