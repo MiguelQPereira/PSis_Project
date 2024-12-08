@@ -35,9 +35,9 @@ int display (player_data_t players[8], alien_data_t aliens[N_ALIENS], pewpew_t z
                 mvwaddch(space, players[i].y+1, players[i].x+1, players[i].ch);
             else
                 mvwaddch(space, players[i].y+1, players[i].x+1, '@');
-
+        }
+        if (players[i].score != -1){
             mvwprintw(score_board, players[i].ch - 61, 4, "%c - %d", players[i].ch, players[i].score);
-
         }
     }
 

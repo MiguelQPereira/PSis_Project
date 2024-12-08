@@ -1,70 +1,37 @@
 #include "display.h"
 
-void outer_space_update( int type, void *socket, void* entity, int x_old, int y_old, int zap) {
+void outer_space_update(void *socket, player_data_t players[8], alien_data_t aliens[N_ALIENS], pewpew_t zaps[2][16], time_t time) {
     
-    int rc, xy[2];
-    xy[0] = x_old;
-    xy[1] = y_old;
-    
-    // alien movement
-    if (type == 0){
-        rc = zmq_send (socket, "ALIEN", strlen ("ALIEN"), ZMQ_SNDMORE);
+    int rc;
+        rc = zmq_send (socket, "DISPLAY", strlen("DISPLAY"), ZMQ_SNDMORE);
         if (rc == -1){
             mvprintw(0,0,"--- ERROR ---\nFAILED TO PUBLISH MESSAGE");
             exit(0);
         }
 
-        rc = zmq_send(socket, entity, sizeof(entity), ZMQ_SNDMORE);
+        rc = zmq_send (socket, players, sizeof(player_data_t)*8, ZMQ_SNDMORE);
         if (rc == -1){
             mvprintw(0,0,"--- ERROR ---\nFAILED TO PUBLISH MESSAGE");
             exit(0);
         }
 
-        rc = zmq_send(socket, xy, sizeof(xy), 0);
+        rc = zmq_send (socket, aliens, sizeof(alien_data_t)*N_ALIENS, ZMQ_SNDMORE);
         if (rc == -1){
             mvprintw(0,0,"--- ERROR ---\nFAILED TO PUBLISH MESSAGE");
             exit(0);
         }
-    }
-    // player movement
-    else if(type == 1){
-        rc = zmq_send (socket, "PLAYER", strlen ("PLAYER"), ZMQ_SNDMORE);
-        if (rc == -1){
-            mvprintw(0,0,"--- ERROR ---\nFAILED TO PUBLISH MESSAGE");
-            exit(0);
-        }
-
-        rc = zmq_send(socket, entity, sizeof(player_data_t), ZMQ_SNDMORE);
-        if (rc == -1){
-            mvprintw(0,0,"--- ERROR ---\nFAILED TO PUBLISH MESSAGE");
-            exit(0);
-        }
-        rc = zmq_send(socket, xy, sizeof(xy), 0);
-        if (rc == -1){
-            mvprintw(0,0,"--- ERROR ---\nFAILED TO PUBLISH MESSAGE");
-            exit(0);
-        }
-    }
-    // zap
-    else if(type == 2){
-
-    }
-    // delete entity
-    else if(type == 3) {
-
-        rc = zmq_send (socket, "DISCONNECT", strlen ("DISCONNECT"), ZMQ_SNDMORE);
-        if (rc == -1){
-            mvprintw(0,0,"--- ERROR ---\nFAILED TO PUBLISH MESSAGE");
-            exit(0);
-        }
-
-        rc = zmq_send(socket, xy, sizeof(xy), 0);
-        if (rc == -1){
-            mvprintw(0,0,"--- ERROR ---\nFAILED TO PUBLISH MESSAGE");
-            exit(0);
-       }        
         
-    }
+        rc = zmq_send (socket, zaps, sizeof(pewpew_t)*2*16, ZMQ_SNDMORE);
+        if (rc == -1){
+            mvprintw(0,0,"--- ERROR ---\nFAILED TO PUBLISH MESSAGE");
+            exit(0);
+        }
+        
+        rc = zmq_send (socket, &time, sizeof(time_t), 0);
+        if (rc == -1){
+            mvprintw(0,0,"--- ERROR ---\nFAILED TO PUBLISH MESSAGE");
+            exit(0);
+        }
 }
 
 int connect_msg (void* socket, int num_players, player_data_t players[8]){
@@ -76,6 +43,7 @@ int connect_msg (void* socket, int num_players, player_data_t players[8]){
             counter++;
 
         players[counter].id = random() % 1000;
+        players[counter].score = 0;
         sprintf(resp, "%c, %d", players[counter].ch, players[counter].id);
         num_players++;
     }
@@ -131,7 +99,7 @@ void new_position(int x, int y, directions_ direction, player_data_t * player){
 
 }
 
-void movement_msg(void *socket, player_data_t players[8], pewpew_t zaps[2][16], remote_char_t message, WINDOW * space, WINDOW * score_board, time_t msg_time){
+void movement_msg(void *socket, player_data_t players[8], pewpew_t zaps[2][16], remote_char_t message, time_t msg_time){
     int idx = 0;
     int rc;
 
@@ -161,13 +129,25 @@ void movement_msg(void *socket, player_data_t players[8], pewpew_t zaps[2][16], 
 
 }
 
-void zap_msg(void *socket, player_data_t players[8], remote_char_t message, WINDOW * space, WINDOW * score_board, time_t time, pewpew_t zaps[2][16], time_t msg_time){
+void zap_msg(void *socket, player_data_t players[8], remote_char_t message, time_t time, pewpew_t zaps[2][16], alien_data_t alien[N_ALIENS]){
     int idx = 0, direction, rc;
 
     while (message.ch != players[idx].ch && message.id != players[idx].id && idx < 8)
         idx++;
     if (idx == 8)
         return;
+
+    if(difftime(time, players[idx].last_zap) < 3){
+
+        rc = zmq_send(socket,&players[idx].score,sizeof(int),0);
+        if (rc == -1){
+            mvprintw(0,0,"--- ERROR ---\nFAILED TO SEND MESSAGE (zap_msg)");
+            exit(0);
+        }
+        return;
+
+    }
+        
 
     if (players[idx].ch % 2 == 0) {
         direction = 1;
@@ -179,6 +159,14 @@ void zap_msg(void *socket, player_data_t players[8], remote_char_t message, WIND
                 players[i].stun = time;
             }
         }
+
+        for (int i=0; i < N_ALIENS; i++) {   
+            if(players[idx].x == alien[i].x && alien[i].hp != 0) {
+
+                alien[i].hp = 0;
+                players[idx].score++;
+            } 
+        }
     } else {
         direction = 0;
         zaps[direction][players[idx].y-2].player = idx;
@@ -187,6 +175,14 @@ void zap_msg(void *socket, player_data_t players[8], remote_char_t message, WIND
         for (int i =0; i<8; i++){
             if(players[i].id != -1 && players[i].y == players[idx].y && i != idx){
                 players[i].stun = time;
+            }
+        }
+
+        for (int i=0; i < N_ALIENS; i++) {
+
+            if(players[idx].y == alien[i].y  && alien[i].hp != 0) {
+                alien[i].hp = 0;
+                players[idx].score++;
             }
         }
     }
@@ -201,7 +197,7 @@ void zap_msg(void *socket, player_data_t players[8], remote_char_t message, WIND
 
 }
 
-int disconnect_msg(void *socket,int num_players, player_data_t players[8], remote_char_t message, WINDOW * space, WINDOW * score_board){
+int disconnect_msg(void *socket,int num_players, player_data_t players[8], remote_char_t message){
     int rc, i=0;
     
     while (message.ch != players[i].ch && message.id != players[i].id && i < 8)
@@ -210,6 +206,7 @@ int disconnect_msg(void *socket,int num_players, player_data_t players[8], remot
         return num_players;
     
     rc = zmq_send(socket,&players[i].score,sizeof(int),0);
+
     if (rc == -1){
         mvprintw(0,0,"--- ERROR ---\nFAILED TO SEND MESSAGE (disconnect_msg)");
         exit(0);
@@ -239,7 +236,7 @@ int main(){
     for (int i = 0; i < 9; i++){
         players[i].ch = 'A' + i;
         players[i].id = -1;
-        players[i].score = 0;
+        players[i].score = -1;
         players[i].stun = 0;
         players[i].last_zap = 0;
         switch (players[i].ch){
@@ -353,14 +350,6 @@ int main(){
 
         msg_time = time(NULL);
 
-        /*for (int i=0; i<2; i++){
-            for (int j=0; j<16; j++){
-                if (difftime(msg_time, zaps[i][j].time) > 0.5 && zaps[i][j].time != 0.0){
-                    zaps[i][j].time = 0.0;
-                }    
-            }
-        }*/
-
         if (rc == -1){
             mvprintw(0,0,"--- ERROR ---\nFAILED TO RECEIVE MESSAGE");
             exit(0);
@@ -371,21 +360,20 @@ int main(){
             
         }
         else if (message.msg_type == 1){
-            movement_msg(responder_RR, players, zaps, message,space, score_board, msg_time); //Send movement message to astronaut client
+            movement_msg(responder_RR, players, zaps, message, msg_time); //Send movement message to astronaut client
 
         }
         else if (message.msg_type == 2){
-            zap_msg(responder_RR, players, message, space, score_board, msg_time, zaps, msg_time); //Send zap message to astronaut client
+            zap_msg(responder_RR, players, message, msg_time, zaps ,aliens); //Send zap message to astronaut client
         }
         else if (message.msg_type == 3){
-            num_players = disconnect_msg(responder_RR, num_players, players, message, space, score_board); //Send disconnect message to astronaut client
+            num_players = disconnect_msg(responder_RR, num_players, players, message); //Send disconnect message to astronaut client
         }
         else {
             mvprintw(0,0,"--- ERROR ...\nINVALID MESSAGE TYPE");
-        }	
-
-        /* TO DO : timer of lazers */
-
+        }
+        
+        outer_space_update(responder_SP, players, aliens, zaps, msg_time);
         display(players, aliens, zaps, msg_time, space, score_board);	 
     }
 
