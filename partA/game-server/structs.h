@@ -4,6 +4,7 @@
 #include <string.h>
 #include <zmq.h>
 #include <unistd.h>
+#include <sys/types.h>
 #include <time.h>
 
 #ifndef STRUCTS_H

@@ -129,6 +129,10 @@ void movement_msg(void *socket, player_data_t players[8], pewpew_t zaps[2][16], 
 
 }
 
+void alien_message(void *socket, alien_data_t aliens[N_ALIENS], remote_char_t message){
+    
+}
+
 void zap_msg(void *socket, player_data_t players[8], remote_char_t message, time_t time, pewpew_t zaps[2][16], alien_data_t alien[N_ALIENS]){
     int idx = 0, direction, rc;
 
@@ -222,6 +226,7 @@ int disconnect_msg(void *socket,int num_players, player_data_t players[8], remot
 }
 
 
+
 int main(){	
     int rc, num_players = 0;
     char buffer[100];
@@ -294,6 +299,17 @@ int main(){
         }
     }
 
+    /* Declare and bind socket to comunicate with the display using the SUB/PUB patern */
+    sprintf(buffer,"tcp://*:%d",PORT_SP);
+    void *context_SP = zmq_ctx_new ();
+    void *responder_SP = zmq_socket (context_SP, ZMQ_PUB);
+    rc = zmq_bind (responder_SP, buffer);
+
+    if (rc == -1){
+        printf("--- ERROR ---\nBINDING TO PORT %d FAILED\n", PORT_SP);
+        exit(0);
+    }
+
     /* Declare and bind socket to comunicate with astronauts using the REP/REQ patern */
     sprintf(buffer,"tcp://*:%d",PORT_RR);
     void *context_RR = zmq_ctx_new ();
@@ -305,17 +321,40 @@ int main(){
         exit(0);
     }
 
+    pid_t pid = fork();
 
-    /* Declare and bind socket to comunicate with the display using the SUB/PUB patern */
-    sprintf(buffer,"tcp://*:%d",PORT_SP);
-    void *context_SP = zmq_ctx_new ();
-    void *responder_SP = zmq_socket (context_SP, ZMQ_PUB);
-    rc = zmq_bind (responder_SP, buffer);
+    if (pid == -1){
+        printf("--- ERROR ---\nFork unsucessful\n");
+        exit (0);
+    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    else if (pid == 0){     // Child code:
 
-    if (rc == -1){
-        printf("--- ERROR ---\nBINDING TO PORT %d FAILED\n", PORT_SP);
-        exit(0);
-    } 
+        void *context = zmq_ctx_new ();
+        void *requester = zmq_socket (context, ZMQ_REQ);
+        rc = zmq_connect (requester,buffer);
+        if (rc == -1){
+            printf("--- ERROR ---\nBINDING TO PORT %d FAILED\n",PORT_RR);
+        }
+
+        message.msg_type = 4;
+
+        while (1)
+        {
+            for (int i=0; i<N_ALIENS; i++){
+                sleep (1);
+                message.id = i;
+                message.direction = random() % 4;
+
+                zmq_send (requester, &message, sizeof(message), 0);
+                aliens[i].hp = zmq_recv (requester, &aliens[i].hp, sizeof(int), 0);
+            }
+        } 
+    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    else{
 
     // ncurses initialization
 	initscr();		    	
@@ -369,6 +408,9 @@ int main(){
         else if (message.msg_type == 3){
             num_players = disconnect_msg(responder_RR, num_players, players, message); //Send disconnect message to astronaut client
         }
+        else if (message.msg_type == 4){
+            alien_message(responder_RR, aliens, message);
+        }
         else {
             mvprintw(0,0,"--- ERROR ...\nINVALID MESSAGE TYPE");
         }
@@ -381,4 +423,5 @@ int main(){
     zmq_close (responder_RR);
     zmq_ctx_destroy (context_RR);
     return 0;
+    }
 }

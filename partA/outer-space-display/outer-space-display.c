@@ -9,10 +9,10 @@ int main (){
     player_data_t players[8];
     alien_data_t aliens [N_ALIENS];
  
-    /* Declare and bind socket to comunicate with astronauts using the REP/REQ patern */
+    /* Declare and bind socket to comunicate with astronauts using the SUB/PUB patern */
     sprintf(buffer,"tcp://%s:%d",IP_ADRESS,PORT_SP);
     void *context = zmq_ctx_new ();
-    void *subscriber = zmq_socket (context, ZMQ_REQ);
+    void *subscriber = zmq_socket (context, ZMQ_SUB);
     rc = zmq_connect (subscriber,buffer);
     if (rc == -1){
         printf("--- ERROR ---\nBINDING TO PORT %d FAILED\n",PORT_SP);
@@ -50,34 +50,29 @@ int main (){
         rc = zmq_recv(subscriber, type, 99, 0);
         if (rc == -1){
             printf("--- ERROR ---\nFAILED TO RECEIVE MESSAGE 1\n");
-            //exit(0);
-            continue;
+            exit(0);
         }
         
         rc = zmq_recv(subscriber, players, sizeof(player_data_t) * 8, 0);
         if (rc == -1){
             printf("--- ERROR ---\nFAILED TO RECEIVE MESSAGE 2\n");
-            //exit(0);
-            continue;
+            exit(0);
         }
 
         rc = zmq_recv(subscriber, aliens, sizeof(alien_data_t)*N_ALIENS, 0);
         if (rc == -1){
             printf("--- ERROR ---\nFAILED TO RECEIVE MESSAGE 3\n");
-            //exit(0);
-            continue;
+            exit(0);
         }
         rc = zmq_recv(subscriber, zaps, sizeof(pewpew_t)*2*16, 0);
         if (rc == -1){
             printf("--- ERROR ---\nFAILED TO RECEIVE MESSAGE 4\n");
-            //exit(0);
-            continue;
+            exit(0);
         }
         rc = zmq_recv(subscriber, &msg_time, sizeof(time_t), 0);
         if (rc == -1){
             printf("--- ERROR ---\nFAILED TO RECEIVE MESSAGE 5\n");
-            //exit(0);
-            continue;
+            exit(0);
         }
         
         display(players, aliens, zaps, msg_time, space, score_board);
