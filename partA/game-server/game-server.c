@@ -388,7 +388,7 @@ int main(){
                     message.direction = random() % 4;
                 }
                 zmq_send (requester_child, &message, sizeof(message), 0);
-                aliens[i].hp = zmq_recv (requester_child, &aliens[i].hp, sizeof(int), 0);
+                zmq_recv (requester_child, &aliens[i].hp, sizeof(int), 0);
             }
         } 
     }

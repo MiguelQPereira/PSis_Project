@@ -4,10 +4,13 @@
 #include <string.h>
 #include <zmq.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <time.h>
 
 #ifndef STRUCTS_H
 #define STRUCTS_H
 #define  WINDOW_SIZE 20
+#define N_ALIENS 85
 
 
 
@@ -45,7 +48,9 @@ typedef struct remote_char_t_{
 typedef struct player_data_t_{
     int id; // personal identifier given by server at run time to a client
     char ch; // caracter that the player controls
-    int score; // Saves the players scores 
+    int score; // Saves the players scores
+    time_t stun;
+    time_t last_zap;
     int x,y; // position of the caracter
 
 } player_data_t;
@@ -58,5 +63,12 @@ typedef struct alien_data_t_ {
     int hp; // 0 -> Dead // 1 -> Alive
 
 }alien_data_t;
+
+
+// Struct that connects a zap in space to the player that shoot it
+typedef struct pewpew_t_ {
+    time_t time;
+    int player;
+}pewpew_t;
 
 #endif //STRUCTS_H

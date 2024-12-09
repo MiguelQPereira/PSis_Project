@@ -4,6 +4,7 @@
 #include <string.h>
 #include <zmq.h>
 #include <unistd.h>
+#include <sys/types.h>
 #include <time.h>
 
 #ifndef STRUCTS_H
@@ -31,7 +32,7 @@ typedef enum directions_t{
     UP,
     DOWN,
     LEFT,
-    RIGHT,
+    RIGHT
 }directions_;
 
 // Struct containing message type (if the player is joining, moving, etc...), the character the player is going to play, the directions and ID
