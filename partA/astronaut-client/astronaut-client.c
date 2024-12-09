@@ -164,6 +164,8 @@ int main()
     zmq_ctx_destroy (context);
 
     printf ("===Left game===\nFinal Score: %d", score);
+    
+    
 
 	return 0;
 

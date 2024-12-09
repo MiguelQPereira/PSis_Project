@@ -170,6 +170,7 @@ void alien_message(void *socket, player_data_t players[8] , alien_data_t aliens[
     
     rc = zmq_send(socket, &aliens[message.id].hp, sizeof(int), 0);
 
+
 }
 
 void zap_msg(void *socket, player_data_t players[8], remote_char_t message, time_t time, pewpew_t zaps[2][16], alien_data_t alien[N_ALIENS]){
@@ -240,7 +241,7 @@ void zap_msg(void *socket, player_data_t players[8], remote_char_t message, time
 
 }
 
-int disconnect_msg(void *socket,int num_players, player_data_t players[8], remote_char_t message){
+int disconnect_msg(void *socket, int num_players, player_data_t players[8], remote_char_t message){
     int rc, i=0;
     
     while (message.ch != players[i].ch && message.id != players[i].id && i < 8)
@@ -264,10 +265,37 @@ int disconnect_msg(void *socket,int num_players, player_data_t players[8], remot
     return num_players;
 }
 
+int end_game(player_data_t players[8], remote_char_t message){
+
+    int i;
+    int maxscore = 0;
+    char end;
+
+    for(i = 0; i < 8; i++){
+
+        if(players[i].score > players[maxscore].score)
+            maxscore = i;
+        }
+
+    mvprintw(0,0,"Player %c won the game with score %d",players[maxscore].ch, players[maxscore].score);
+
+    mvprintw(1,0,"Press a key to quit");
+
+    end = getch();
+
+    
+    return 0;
+        
+}
+
+
+
+
+
 
 
 int main(){	
-    int rc, num_players = 0;
+    int rc, num_players = 0, game = 1;
     char buffer[100];
     time_t msg_time;
     pewpew_t  zaps[2][16];
@@ -423,7 +451,7 @@ int main(){
     wrefresh(space);
     wrefresh(score_board);
 
-    while (1){
+    while (game){
         
         rc = zmq_recv(responder_RR, &message, sizeof(remote_char_t), 0);
 
@@ -456,7 +484,16 @@ int main(){
         }
         
         outer_space_update(responder_SP, players, aliens, zaps, msg_time);
-        display(players, aliens, zaps, msg_time, space, score_board);	 
+        display(players, aliens, zaps, msg_time, space, score_board);
+
+        for(int i=0; i<N_ALIENS; i++){
+            if (aliens[i].hp == 1)
+                break;
+
+            game = end_game(players,message);
+
+        }
+
     }
 
     endwin(); // End curses mode
