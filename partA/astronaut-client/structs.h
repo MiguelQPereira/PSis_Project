@@ -29,9 +29,7 @@ typedef enum directions_t{
     UP,
     DOWN,
     LEFT,
-    RIGHT,
-    ZAP,
-    QUIT
+    RIGHT
 }directions_;
 
 // Struct containing message type (if the player is joining, moving, etc...), the character the player is going to play, the directions and ID

@@ -119,21 +119,18 @@ int main()
             case ' ':
                 mvprintw(0,0,"%d Zapping                   ", n);
                 // prepare ZAP message
-                message.direction = ZAP;
                 message.msg_type = 2; // sending zap
                 break;  
 
             case 'q':
                 mvprintw(0,0,"%d 'q' Disconnecting...                     ", n);
                 // prepare QUIT message
-                message.direction = QUIT;
                 message.msg_type = 3; // sending quit message 
                 break;
 
             case 'Q':
                 mvprintw(0,0,"%d 'Q' Disconnecting...                        ", n);
                 // prepare QUIT message
-                message.direction = QUIT;
                 message.msg_type = 3; // sending quit message 
                 break;
                 

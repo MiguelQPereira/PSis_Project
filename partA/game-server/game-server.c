@@ -84,9 +84,6 @@ void new_position(int x, int y, directions_ direction, player_data_t * player){
         if(x ==WINDOW_SIZE-2)
             x = WINDOW_SIZE-3;
         break;
-    case ZAP:
-        //Para Miguel elaborar
-    case QUIT:
 
     default:
         break;
@@ -129,8 +126,50 @@ void movement_msg(void *socket, player_data_t players[8], pewpew_t zaps[2][16], 
 
 }
 
-void alien_message(void *socket, alien_data_t aliens[N_ALIENS], remote_char_t message){
+void alien_message(void *socket, player_data_t players[8] , alien_data_t aliens[N_ALIENS], pewpew_t zaps[2][16], time_t msg_time, remote_char_t message){
     
+    int rc;
+
+    switch (message.direction)
+    {
+    case UP:
+        aliens[message.id].y --;
+        if(aliens[message.id].y == 1)
+           aliens[message.id].y = 2;
+        break;
+    case DOWN:
+        aliens[message.id].y++;
+        if(aliens[message.id].y == WINDOW_SIZE-2)
+            aliens[message.id].y= WINDOW_SIZE-3;
+        break;
+    case LEFT:
+        aliens[message.id].x --;
+        if(aliens[message.id].x ==1)
+            aliens[message.id].x = 2;
+        break;
+    case RIGHT:
+        aliens[message.id].x++;
+        if(aliens[message.id].x == WINDOW_SIZE-2)
+            aliens[message.id].x = WINDOW_SIZE-3;
+        break;
+
+    default:
+        break;
+    }
+
+    if (zaps[1][aliens[message.id].x - 2].player != -1 && difftime(msg_time, zaps[1][aliens[message.id].x-2].time) < 0.5){
+        aliens[message.id].hp = 0;
+        players[zaps[1][aliens[message.id].x - 2].player].score++;
+    }
+
+    if (zaps[0][aliens[message.id].y - 2].player != -1 && difftime(msg_time, zaps[1][aliens[message.id].y-2].time) < 0.5){
+        aliens[message.id].hp = 0;
+        players[zaps[1][aliens[message.id].y - 2].player].score++;
+    }
+
+    
+    rc = zmq_send(socket, &aliens[message.id].hp, sizeof(int), 0);
+
 }
 
 void zap_msg(void *socket, player_data_t players[8], remote_char_t message, time_t time, pewpew_t zaps[2][16], alien_data_t alien[N_ALIENS]){
@@ -340,13 +379,13 @@ int main(){
 
         message.msg_type = 4;
 
-        while (1)
-        {
+        while (1){
+            sleep (1);
             for (int i=0; i<N_ALIENS; i++){
-                sleep (1);
-                message.id = i;
-                message.direction = random() % 4;
-
+                if (aliens[i].hp == 1){
+                    message.id = i;
+                    message.direction = random() % 4;
+                }
                 zmq_send (requester, &message, sizeof(message), 0);
                 aliens[i].hp = zmq_recv (requester, &aliens[i].hp, sizeof(int), 0);
             }
@@ -409,7 +448,7 @@ int main(){
             num_players = disconnect_msg(responder_RR, num_players, players, message); //Send disconnect message to astronaut client
         }
         else if (message.msg_type == 4){
-            alien_message(responder_RR, aliens, message);
+            alien_message(responder_RR, players, aliens, zaps, msg_time, message);
         }
         else {
             mvprintw(0,0,"--- ERROR ...\nINVALID MESSAGE TYPE");
