@@ -370,11 +370,12 @@ int main(){
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     else if (pid == 0){     // Child code:
 
-        void *context = zmq_ctx_new ();
-        void *requester = zmq_socket (context, ZMQ_REQ);
-        rc = zmq_connect (requester,buffer);
+        sprintf(buffer,"tcp://%s:%d",IP_ADRESS,PORT_RR);
+        void *context_child = zmq_ctx_new ();
+        void *requester_child = zmq_socket (context_child, ZMQ_REQ);
+        rc = zmq_connect (requester_child,buffer);
         if (rc == -1){
-            printf("--- ERROR ---\nBINDING TO PORT %d FAILED\n",PORT_RR);
+            printf("--- ERROR ---\nCHILD FAILED TO BIND TO PORT %d\n",PORT_RR);
         }
 
         message.msg_type = 4;
@@ -386,8 +387,8 @@ int main(){
                     message.id = i;
                     message.direction = random() % 4;
                 }
-                zmq_send (requester, &message, sizeof(message), 0);
-                aliens[i].hp = zmq_recv (requester, &aliens[i].hp, sizeof(int), 0);
+                zmq_send (requester_child, &message, sizeof(message), 0);
+                aliens[i].hp = zmq_recv (requester_child, &aliens[i].hp, sizeof(int), 0);
             }
         } 
     }

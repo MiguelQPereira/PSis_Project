@@ -148,7 +148,7 @@ int main()
         }
 
         else {
-            mvprintw(0,0,"<--- UPS ---> Try again");
+            mvprintw(0,0,"<--- UPS ---> Try again                       ");
         }
 
         
