@@ -51,7 +51,6 @@ typedef struct player_data_t_{
     int score; // Saves the players scores
     time_t stun;
     time_t last_zap;
-    char win[100];
     int x,y; // position of the caracter
 
 } player_data_t;

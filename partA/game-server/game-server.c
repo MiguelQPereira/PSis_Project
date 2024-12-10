@@ -114,12 +114,12 @@ void movement_msg(void *socket, player_data_t players[8], pewpew_t zaps[2][16], 
 
     if (players[idx].ch % 2 == 0) {
         //direction = 1;
-        if (zaps[1][players[idx].x - 2].player != -1 && difftime(msg_time, zaps[1][players[idx].x-2].time) < 0.5){
+        if (zaps[1][players[idx].x - 2].player != -1 && difftime(msg_time, zaps[1][players[idx].x-2].time) < 0.5 && zaps[1][players[idx].x-2].player != idx){
             players[idx].stun = msg_time;
         }
     } else {
         //direction = 0;
-        if (zaps[0][players[idx].y - 2].player != -1 && difftime(msg_time, zaps[1][players[idx].y-2].time) < 0.5){
+        if (zaps[0][players[idx].y - 2].player != -1 && difftime(msg_time, zaps[0][players[idx].y-2].time) < 0.5 && zaps[0][players[idx].y - 2].player != idx){
             players[idx].stun = msg_time;
         }
     }
@@ -130,27 +130,27 @@ void alien_message(void *socket, player_data_t players[8] , alien_data_t aliens[
     
     int rc;
 
-    switch (message.direction)
-    {
+    if (aliens[message.id].hp == 0){
+        rc = zmq_send(socket, &aliens[message.id].hp, sizeof(int), 0);
+        return;
+    }
+
+    switch (message.direction){
     case UP:
-        aliens[message.id].y --;
-        if(aliens[message.id].y == 1)
-           aliens[message.id].y = 2;
+        if(aliens[message.id].y > 2)
+           aliens[message.id].y--;
         break;
     case DOWN:
-        aliens[message.id].y++;
-        if(aliens[message.id].y == WINDOW_SIZE-2)
-            aliens[message.id].y= WINDOW_SIZE-3;
+        if(aliens[message.id].y < WINDOW_SIZE-3)
+            aliens[message.id].y++;
         break;
     case LEFT:
-        aliens[message.id].x --;
-        if(aliens[message.id].x ==1)
-            aliens[message.id].x = 2;
+        if(aliens[message.id].x > 2)
+            aliens[message.id].x --;
         break;
     case RIGHT:
-        aliens[message.id].x++;
-        if(aliens[message.id].x == WINDOW_SIZE-2)
-            aliens[message.id].x = WINDOW_SIZE-3;
+        if(aliens[message.id].x < WINDOW_SIZE-3)
+            aliens[message.id].x++;
         break;
 
     default:
@@ -162,14 +162,11 @@ void alien_message(void *socket, player_data_t players[8] , alien_data_t aliens[
         players[zaps[1][aliens[message.id].x - 2].player].score++;
     }
 
-    if (zaps[0][aliens[message.id].y - 2].player != -1 && difftime(msg_time, zaps[1][aliens[message.id].y-2].time) < 0.5){
+    if (zaps[0][aliens[message.id].y - 2].player != -1 && difftime(msg_time, zaps[0][aliens[message.id].y-2].time) < 0.5){
         aliens[message.id].hp = 0;
-        players[zaps[1][aliens[message.id].y - 2].player].score++;
+        players[zaps[0][aliens[message.id].y - 2].player].score++;
     }
-
-    
     rc = zmq_send(socket, &aliens[message.id].hp, sizeof(int), 0);
-
 
 }
 
@@ -178,18 +175,17 @@ void zap_msg(void *socket, player_data_t players[8], remote_char_t message, time
 
     while (message.ch != players[idx].ch && message.id != players[idx].id && idx < 8)
         idx++;
+
     if (idx == 8)
         return;
 
     if(difftime(time, players[idx].last_zap) < 3){
-
         rc = zmq_send(socket,&players[idx].score,sizeof(int),0);
         if (rc == -1){
             mvprintw(0,0,"--- ERROR ---\nFAILED TO SEND MESSAGE (zap_msg)");
             exit(0);
         }
         return;
-
     }
         
 
@@ -206,7 +202,6 @@ void zap_msg(void *socket, player_data_t players[8], remote_char_t message, time
 
         for (int i=0; i < N_ALIENS; i++) {   
             if(players[idx].x == alien[i].x && alien[i].hp != 0) {
-
                 alien[i].hp = 0;
                 players[idx].score++;
             } 
@@ -485,14 +480,13 @@ int main(){
         
         outer_space_update(responder_SP, players, aliens, zaps, msg_time);
         display(players, aliens, zaps, msg_time, space, score_board);
-
-        for(int i=0; i<N_ALIENS; i++){
+        int i;
+        for(i=0; i<N_ALIENS; i++){
             if (aliens[i].hp == 1)
                 break;
-
-            game = end_game(players,message);
-
         }
+        if(i==85)
+            game = end_game(players,message);       
 
     }
 
