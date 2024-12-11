@@ -18,7 +18,7 @@
 
 #define PORT_RR  5555 // REQ-REP
 #define PORT_SP  5554 // SUB-PUB
-#define IP_ADRESS  "127.0.0.1" //Insert the address
+#define IP_ADRESS  "194.210.156.196" //Insert the address
 
 
 
