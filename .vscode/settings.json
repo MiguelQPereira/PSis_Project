@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "fcntl.h": "c",
-        "assert.h": "c"
+        "assert.h": "c",
+        "structs.h": "c"
     }
 }
