@@ -3,7 +3,7 @@
 int main (){
 
     char buffer [100], type[100];
-    int rc;
+    int rc, game=1;
     time_t msg_time;
     pewpew_t  zaps[2][16];
     player_data_t players[8];
@@ -74,10 +74,24 @@ int main (){
             printf("--- ERROR ---\nFAILED TO RECEIVE MESSAGE 5\n");
             exit(0);
         }
-        
-        display(players, aliens, zaps, msg_time, space, score_board);
+
+        rc = zmq_recv(subscriber, &game, sizeof(int), 0);
+        if (rc == -1){
+            printf("--- ERROR ---\nFAILED TO RECEIVE MESSAGE 6\n");
+            exit(0);
+        }
+
+        if (game == 1){      
+            display(players, aliens, zaps, msg_time, space, score_board);
+        }else{
+            break;
+        }
     }
-    
+    for (int i = 0; i < 25; i++){
+        mvprintw(i, 0, "                                                     ");
+    }
+    move(0,0);
+    refresh();
     zmq_close (subscriber);
     zmq_ctx_destroy (context);
     return 0;

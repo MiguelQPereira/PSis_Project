@@ -32,6 +32,7 @@ int display (player_data_t players[8], alien_data_t aliens[N_ALIENS], pewpew_t z
         }
     }
 
+
     /* Puts players and score*/
     for (int i=0; i<8; i++){
         if (players[i].id != -1){

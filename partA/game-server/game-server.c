@@ -1,35 +1,41 @@
 #include "display.h"
 
-void outer_space_update(void *socket, player_data_t players[8], alien_data_t aliens[N_ALIENS], pewpew_t zaps[2][16], time_t time) {
+void outer_space_update(void *socket, player_data_t players[8], alien_data_t aliens[N_ALIENS], pewpew_t zaps[2][16], time_t time, int game) {
     
     int rc;
         rc = zmq_send (socket, "DISPLAY", strlen("DISPLAY"), ZMQ_SNDMORE);
         if (rc == -1){
-            mvprintw(0,0,"--- ERROR ---\nFAILED TO PUBLISH MESSAGE");
+            mvprintw(0,0,"--- ERROR ---\nFAILED TO PUBLISH MESSAGE 1");
             exit(0);
         }
 
         rc = zmq_send (socket, players, sizeof(player_data_t)*8, ZMQ_SNDMORE);
         if (rc == -1){
-            mvprintw(0,0,"--- ERROR ---\nFAILED TO PUBLISH MESSAGE");
+            mvprintw(0,0,"--- ERROR ---\nFAILED TO PUBLISH MESSAGE 2");
             exit(0);
         }
 
         rc = zmq_send (socket, aliens, sizeof(alien_data_t)*N_ALIENS, ZMQ_SNDMORE);
         if (rc == -1){
-            mvprintw(0,0,"--- ERROR ---\nFAILED TO PUBLISH MESSAGE");
+            mvprintw(0,0,"--- ERROR ---\nFAILED TO PUBLISH MESSAGE 3");
             exit(0);
         }
         
         rc = zmq_send (socket, zaps, sizeof(pewpew_t)*2*16, ZMQ_SNDMORE);
         if (rc == -1){
-            mvprintw(0,0,"--- ERROR ---\nFAILED TO PUBLISH MESSAGE");
+            mvprintw(0,0,"--- ERROR ---\nFAILED TO PUBLISH MESSAGE 4");
             exit(0);
         }
         
-        rc = zmq_send (socket, &time, sizeof(time_t), 0);
+        rc = zmq_send (socket, &time, sizeof(time_t), ZMQ_SNDMORE);
         if (rc == -1){
-            mvprintw(0,0,"--- ERROR ---\nFAILED TO PUBLISH MESSAGE");
+            mvprintw(0,0,"--- ERROR ---\nFAILED TO PUBLISH MESSAGE 5");
+            exit(0);
+        }
+
+        rc = zmq_send (socket, &game, sizeof(int), 0);
+        if (rc == -1){
+            mvprintw(0,0,"--- ERROR ---\nFAILED TO PUBLISH MESSAGE 6");
             exit(0);
         }
 }
@@ -106,6 +112,10 @@ void movement_msg(void *socket, player_data_t players[8], pewpew_t zaps[2][16], 
         return;
 
     rc = zmq_send(socket,&players[idx].score,sizeof(int),0);
+    if (rc == -1){
+        mvprintw(0,0,"--- ERROR ---\nFAILED TO RECEIVE MESSAGE (movement_msg)");
+        exit(0);
+    }
 
     if (difftime(msg_time, players[idx].stun) < 10)
         return;
@@ -132,6 +142,10 @@ void alien_message(void *socket, player_data_t players[8] , alien_data_t aliens[
 
     if (aliens[message.id].hp == 0){
         rc = zmq_send(socket, &aliens[message.id].hp, sizeof(int), 0);
+        if (rc == -1){
+        mvprintw(0,0,"--- ERROR ---\nFAILED TO SEND MESSAGE (alien_message)");
+        exit(0);
+    }
         return;
     }
 
@@ -171,6 +185,10 @@ void alien_message(void *socket, player_data_t players[8] , alien_data_t aliens[
         players[zaps[0][aliens[message.id].y - 2].player].score++;
     }
     rc = zmq_send(socket, &aliens[message.id].hp, sizeof(int), 0);
+    if (rc == -1){
+        mvprintw(0,0,"--- ERROR ---\nFAILED TO SEND MESSAGE (alien_message)");
+        exit(0);
+    }
 
 }
 
@@ -249,7 +267,6 @@ int disconnect_msg(void *socket, int num_players, player_data_t players[8], remo
         return num_players;
     
     rc = zmq_send(socket,&players[i].score,sizeof(int),0);
-
     if (rc == -1){
         mvprintw(0,0,"--- ERROR ---\nFAILED TO SEND MESSAGE (disconnect_msg)");
         exit(0);
@@ -266,12 +283,12 @@ int disconnect_msg(void *socket, int num_players, player_data_t players[8], remo
 
 int end_game(void *socket, player_data_t players[8], remote_char_t message, int num_players){
 
-    int i;
+    int rc, i;
     int maxscore = 0;
     char end;
 
-    for (int i = 1; i < 21; i++){
-        mvprintw(0, 0, "                                                     ");
+    for (int i = 0; i < 25; i++){
+        mvprintw(i, 0, "                                                     ");
     }
 
     for(i = 0; i < 8; i++){
@@ -285,21 +302,36 @@ int end_game(void *socket, player_data_t players[8], remote_char_t message, int 
 
     refresh();
     while (num_players > 0){
-        zmq_recv (socket, &message, sizeof(remote_char_t), 0);
-
+        rc = zmq_recv (socket, &message, sizeof(remote_char_t), 0);
+        if (rc == -1){
+            mvprintw(0,0,"--- ERROR ---\nFAILED TO RECEIVE MESSAGE (end_game)");
+            exit(0);
+        }
+        if (message.msg_type != 4){
             if(players[maxscore].ch == message.ch && players[maxscore].id == message.id){
                 i = -1;
-                zmq_send (socket, &i, sizeof(int), 0);
+                rc = zmq_send (socket, &i, sizeof(int), 0);
+                if (rc == -1){
+                    mvprintw(0,0,"--- ERROR ---\nFAILED TO SEND MESSAGE (end_game)");
+                    exit(0);
+                }
             }else{
                 i = -2;
-                zmq_send (socket, &i, sizeof(int), 0);
+                rc = zmq_send (socket, &i, sizeof(int), 0);
+                if (rc == -1){
+                    mvprintw(0,0,"--- ERROR ---\nFAILED TO SEND MESSAGE (end_game)");
+                    exit(0);
+                }
             }    
             num_players--;
-        
+        }
+        i=-1;
+        rc = zmq_send (socket, &i, sizeof(int), 0);
+        if (rc == -1){
+            mvprintw(0,0,"--- ERROR ---\nFAILED TO SEND MESSAGE (end_game)");
+            exit(0);
+        }
     }
-    
-    mvprintw(1,0,"Press a key to quit                  ");
-    end = getch();
 
     return 0;
         
@@ -424,6 +456,7 @@ int main(){
         }
 
         message.msg_type = 4;
+        int resp;
 
         while (1){
             sleep (1);
@@ -431,13 +464,28 @@ int main(){
                 if (aliens[i].hp == 1){
                     message.id = i;
                     message.direction = random() % 4;
-                    zmq_send (requester_child, &message, sizeof(message), 0);
-                    zmq_recv (requester_child, &aliens[i].hp, sizeof(int), 0);
+                    rc = zmq_send (requester_child, &message, sizeof(message), 0);
+                    if (rc == -1){
+                        mvprintw(0,0,"--- ERROR ---\nFAILED TO SEND MESSAGE");
+                        exit(0);
+                    }
+                    rc = zmq_recv (requester_child, &resp, sizeof(int), 0);
+                    if (rc == -1){
+                        mvprintw(0,0,"--- ERROR ---\nFAILED TO RECEIVE MESSAGE");
+                        exit(0);
+                    }
+                    if (resp != -1)
+                        aliens[i].hp = resp;
+                    else
+                        break;
                 }
-                
             }
-        } 
-    }
+            if (resp == -1)
+                break;
+        }
+        zmq_close(requester_child);
+        zmq_ctx_destroy(context_child);
+     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     else{
@@ -463,7 +511,7 @@ int main(){
     mvaddch(11, 0, '0');
     mvaddch(21, 0, '0');
 
-    mvwprintw(score_board, 2, 4, "SCORE");
+    mvwprintw(score_board, 2, 4, "SCORE:");
 
     refresh();
     wrefresh(space);
@@ -501,21 +549,25 @@ int main(){
             mvprintw(0,0,"--- ERROR ...\nINVALID MESSAGE TYPE");
         }
         
-        outer_space_update(responder_SP, players, aliens, zaps, msg_time);
+        outer_space_update(responder_SP, players, aliens, zaps, msg_time, 1);
         display(players, aliens, zaps, msg_time, space, score_board);
         int i;
         for(i=0; i<N_ALIENS; i++){
             if (aliens[i].hp == 1)
                 break;
         }
-        if(i==N_ALIENS)
-            game = end_game(responder_RR, players,message, num_players);       
+        if(i==N_ALIENS){
+            outer_space_update(responder_SP, players, aliens, zaps, msg_time, 0);
+            game = end_game(responder_RR, players,message, num_players);   
+        }    
 
     }
 
     endwin(); // End curses mode
     zmq_close (responder_RR);
+    zmq_close (responder_SP);
     zmq_ctx_destroy (context_RR);
+    zmq_ctx_destroy (context_SP);
     return 0;
     }
 }
