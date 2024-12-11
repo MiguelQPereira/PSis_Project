@@ -6,7 +6,7 @@ int main()
     remote_char_t message;
     char buffer[100];
     char resp[100];
-    int score = 0;
+    int score = 0, n_resp;
 
     /* Declare and bind socket to comunicate with astronauts using the REP/REQ patern */
     sprintf(buffer,"tcp://%s:%d",IP_ADRESS,PORT_RR);
@@ -143,8 +143,17 @@ int main()
         //send the movement message
         if (key != 0){
             zmq_send (requester, &message, sizeof(message), 0);
-            zmq_recv (requester, &score, sizeof(int), 0);
-            mvprintw(10,10,"Your score: %d",score);
+            zmq_recv (requester, &n_resp, sizeof(int), 0);
+            if (n_resp != -1 && n_resp != -2){
+                score = n_resp;
+                mvprintw(10,10,"Your score: %d",score);
+            }
+            else{
+                mvprintw(0,0,"Game Ended         ");
+                mvprintw(1,0,"Press a Key to see results ...");
+                getch();
+                key = 'q';
+            }
         }
 
         else {
@@ -163,7 +172,15 @@ int main()
     zmq_close (requester);
     zmq_ctx_destroy (context);
 
-    printf ("===Left game===\nFinal Score: %d", score);
+    if(n_resp == -1){
+        printf ("You won!!!\nFinal Score: %d\n", score);
+    }else if(n_resp == -2){
+        printf ("Game ended\nFinal Score: %d\n", score);
+    }else
+        printf ("===Left game===\nFinal Score: %d\n", score);
+
+
+    
     
     
 

@@ -137,12 +137,16 @@ void alien_message(void *socket, player_data_t players[8] , alien_data_t aliens[
 
     switch (message.direction){
     case UP:
-        if(aliens[message.id].y > 2)
+        if(aliens[message.id].y > 2){
            aliens[message.id].y--;
+        } else
+           aliens[message.id].y = 2; 
         break;
     case DOWN:
-        if(aliens[message.id].y < WINDOW_SIZE-3)
+        if(aliens[message.id].y < WINDOW_SIZE-3){
             aliens[message.id].y++;
+        } else
+           aliens[message.id].y = WINDOW_SIZE-3; 
         break;
     case LEFT:
         if(aliens[message.id].x > 2)
@@ -260,11 +264,15 @@ int disconnect_msg(void *socket, int num_players, player_data_t players[8], remo
     return num_players;
 }
 
-int end_game(player_data_t players[8], remote_char_t message){
+int end_game(void *socket, player_data_t players[8], remote_char_t message, int num_players){
 
     int i;
     int maxscore = 0;
     char end;
+
+    for (int i = 1; i < 21; i++){
+        mvprintw(0, 0, "                                                     ");
+    }
 
     for(i = 0; i < 8; i++){
 
@@ -273,12 +281,26 @@ int end_game(player_data_t players[8], remote_char_t message){
         }
 
     mvprintw(0,0,"Player %c won the game with score %d",players[maxscore].ch, players[maxscore].score);
+    mvprintw(1,0,"Waiting for players to leave the game");
 
-    mvprintw(1,0,"Press a key to quit");
+    refresh();
+    while (num_players > 0){
+        zmq_recv (socket, &message, sizeof(remote_char_t), 0);
 
+            if(players[maxscore].ch == message.ch && players[maxscore].id == message.id){
+                i = -1;
+                zmq_send (socket, &i, sizeof(int), 0);
+            }else{
+                i = -2;
+                zmq_send (socket, &i, sizeof(int), 0);
+            }    
+            num_players--;
+        
+    }
+    
+    mvprintw(1,0,"Press a key to quit                  ");
     end = getch();
 
-    
     return 0;
         
 }
@@ -409,9 +431,10 @@ int main(){
                 if (aliens[i].hp == 1){
                     message.id = i;
                     message.direction = random() % 4;
+                    zmq_send (requester_child, &message, sizeof(message), 0);
+                    zmq_recv (requester_child, &aliens[i].hp, sizeof(int), 0);
                 }
-                zmq_send (requester_child, &message, sizeof(message), 0);
-                zmq_recv (requester_child, &aliens[i].hp, sizeof(int), 0);
+                
             }
         } 
     }
@@ -485,8 +508,8 @@ int main(){
             if (aliens[i].hp == 1)
                 break;
         }
-        if(i==85)
-            game = end_game(players,message);       
+        if(i==N_ALIENS)
+            game = end_game(responder_RR, players,message, num_players);       
 
     }
 
