@@ -2,6 +2,7 @@
 #include "../others/display.h"
 
 
+int client_game = 1; // Variable to control the game state of the client
 
 void * show_display(){
 
@@ -85,14 +86,20 @@ void * show_display(){
             exit(0);
         }
 
-        if (game == 1){   
+        if (game == 1 && client_game == 1){   
             display(players, aliens, zaps, msg_time, space, score_board);
         }else{
             break;
         }
+
         
     }
     
+    for (int i = 0; i < 25; i++){
+        mvprintw(i, 0, "                                                     ");
+    }
+    move(0,0);
+    refresh();
     zmq_close (subscriber);
     zmq_ctx_destroy (context);
 }
@@ -140,13 +147,13 @@ int main(){
         exit(1);
     }
 
-    long int thread_display_id;
+    long int thread_display_id, thread_display;
 
-     thread_display_id = 0;
+    thread_display_id = 0;
 
     // Create the thread for the display
-    thread_display_id = pthread_create(&thread_display_id, NULL, show_display, NULL);
-    if (thread_display_id != 0) {
+    thread_display = pthread_create(&thread_display_id, NULL, show_display, NULL);
+    if (thread_display!= 0) {
         printf("--- ERROR ---\nCOULDN'T CREATE DISPLAY THREAD");
         exit(1);
     }
@@ -234,12 +241,14 @@ int main(){
             case 'q':
                 //mvprintw(25,0,"%d 'q' Disconnecting...                     ", n);
                 // prepare QUIT message
+                client_game = 0;
                 message.msg_type = 3; // sending quit message 
                 break;
 
             case 'Q':
                 //mvprintw(25,0,"%d 'Q' Disconnecting...                        ", n);
                 // prepare QUIT message
+                client_game = 0;
                 message.msg_type = 3; // sending quit message
                 break;
 
@@ -275,17 +284,10 @@ int main(){
  
 
     }while(key != 'Q' && key != 'q');
-
-    
-    
+ 
     // Wait for thread to finish
     pthread_join(thread_display_id, NULL);
-
-    for (int i = 0; i < 25; i++){
-        mvprintw(i, 0, "                                                     ");
-    }
-    move(0,0);
-
+    
     endwin(); // End curses mode
 
     // Close socket in case of disconnect
