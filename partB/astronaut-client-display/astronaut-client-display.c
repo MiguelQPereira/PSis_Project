@@ -147,13 +147,13 @@ int main(){
         exit(1);
     }
 
-    long int thread_display_id, thread_display;
-
+    long int thread_display_id;
+    int check;
     thread_display_id = 0;
 
-    // Create the thread for the display
-    thread_display = pthread_create(&thread_display_id, NULL, show_display, NULL);
-    if (thread_display!= 0) {
+    // Create the thread for the dissplay
+    check = pthread_create(&thread_display_id, NULL, show_display, NULL);
+    if (check != 0) {
         printf("--- ERROR ---\nCOULDN'T CREATE DISPLAY THREAD");
         exit(1);
     }
@@ -179,7 +179,6 @@ int main(){
                 // to the left or right 
                 if(message.ch == 'B' || message.ch == 'D' || message.ch == 'F' || message.ch == 'H') {
                     message.msg_type = 1;
-                    //mvprintw(25,0,"%d Left arrow is pressed              ", n);
                     // prepare the movement message
                     message.direction = LEFT;
                     break;
@@ -194,7 +193,6 @@ int main(){
                 // to the left or right
                 if(message.ch == 'B' || message.ch == 'D' || message.ch == 'F' || message.ch == 'H') {
                     message.msg_type = 1;
-                    //mvprintw(25,0,"%d Right arrow is pressed                 ", n);
                     // prepare the movement message
                     message.direction = RIGHT;
                     break;
@@ -208,7 +206,6 @@ int main(){
                 // up and down
                 if(message.ch == 'A' || message.ch == 'C' || message.ch == 'E' || message.ch == 'G') {
                     message.msg_type = 1;
-                    //mvprintw(25,0,"%d Down arrow is pressed              ", n);
                     // prepare the movement message
                     message.direction = DOWN;
                     break;
@@ -222,7 +219,6 @@ int main(){
                 // up and down
                 if(message.ch == 'A' || message.ch == 'C' || message.ch == 'E' || message.ch == 'G') {
                     message.msg_type = 1;
-                    //mvprintw(25,0,"%d Up arrow is pressed                   ", n);
                     // prepare the movement message
                     message.direction = UP;
                     break;
@@ -233,22 +229,19 @@ int main(){
                 }
 
             case ' ':
-                //mvprintw(25,0,"%d Zapping                   ", n);
                 // prepare ZAP message
                 message.msg_type = 2; // sending zap
                 break;  
 
             case 'q':
-                //mvprintw(25,0,"%d 'q' Disconnecting...                     ", n);
-                // prepare QUIT message
                 client_game = 0;
+                // prepare QUIT message
                 message.msg_type = 3; // sending quit message 
                 break;
 
             case 'Q':
-                //mvprintw(25,0,"%d 'Q' Disconnecting...                        ", n);
-                // prepare QUIT message
                 client_game = 0;
+                // prepare QUIT message
                 message.msg_type = 3; // sending quit message
                 break;
 
@@ -274,12 +267,7 @@ int main(){
             }
             else{
                 score = n_resp;
-                //mvprintw(30,0,"Your score: %d",score);
             }
-        }
-
-        else {
-            //mvprintw(25,0,"<--- UPS ---> Try again                       ");
         }
  
 
