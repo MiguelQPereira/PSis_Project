@@ -1,6 +1,9 @@
 #include "../others/display.h"
 #include "high_score.pb-c.h"
 
+
+int game = 1; // Variable to control the game status
+
 // Sends the messages to the outer-space display with the information to print
 void outer_space_update(void *socket, player_data_t players[8], alien_data_t aliens[N_ALIENS], pewpew_t zaps[2][16], time_t time, int game) {
     
@@ -366,20 +369,90 @@ int end_game(void *socket, player_data_t players[8], remote_char_t message, int 
         
 }
 
+void * aliens_movement(void *arg){
+
+    char buffer[100];
+    int rc;
+    remote_char_t message;
+    alien_data_t aliens[N_ALIENS];
+
+    alien_data_t * alien_arg = (alien_data_t*) arg;
+    for (int i=0; i<N_ALIENS; i++){
+        aliens[i].hp = alien_arg[i].hp;  
+        aliens[i].x = alien_arg[i].x;
+        aliens[i].y = alien_arg[i].y;
+    }
+
+    free(alien_arg);
+
+    // Connects to the parent
+    sprintf(buffer,"tcp://%s:%d",IP_ADRESS,PORT_RR);
+    void *context_child = zmq_ctx_new ();
+    void *requester_child = zmq_socket (context_child, ZMQ_REQ);
+    rc = zmq_connect (requester_child,buffer);
+    if (rc == -1){
+        printf("--- ERROR ---\nCHILD FAILED TO BIND TO PORT %d\n",PORT_RR);
+    }
+    // alien movement messages
+    message.msg_type = 4;
+    int resp;
+
+    while (1){
+        // 1s delay
+        sleep (1);
+        // sends one message with a random movement of a alien
+        for (int i=0; i<N_ALIENS; i++){
+            if (aliens[i].hp == 1){
+                message.id = i;
+                message.direction = random() % 4;
+                rc = zmq_send (requester_child, &message, sizeof(message), 0);
+                if (rc == -1){
+                    mvprintw(0,0,"--- ERROR ---\nFAILED TO SEND MESSAGE");
+                    exit(0);
+                }
+                rc = zmq_recv (requester_child, &resp, sizeof(int), 0);
+                if (rc == -1){
+                    mvprintw(0,0,"--- ERROR ---\nFAILED TO RECEIVE MESSAGE");
+                    exit(0);
+                }
+                if (resp != -1)
+                    aliens[i].hp = resp;
+                else// end game situation
+                    break;
+            }
+        }
+        if (resp == -1)
+            break;
+    }
+    zmq_close(requester_child);
+    zmq_ctx_destroy(context_child);
+
+
+}
+
+void * quit(){
+
+    char c;
+    c = getch();
+
+    if (c == 'q' || c == 'Q'){
+        game = 0;
+    }
+
+}
 
 
 
 
-
-
-int main(){	
-    int rc, num_players = 0, game = 1;
+int main(){
+    	
+    int rc, num_players = 0;
     char buffer[100];
     time_t msg_time;
     pewpew_t  zaps[2][16];
     remote_char_t message;
     player_data_t players[8];
-    alien_data_t aliens [N_ALIENS];
+    alien_data_t aliens [N_ALIENS], *alien_arg;
     srandom(time(NULL));
 
     /* Inicialises the vector players with the carecters and inicial positions */
@@ -477,66 +550,42 @@ int main(){
         exit(0);
     }
 
-    pid_t pid = fork();
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    alien_arg = malloc (N_ALIENS * sizeof(alien_data_t));
 
-    if (pid == -1){
-        printf("--- ERROR ---\nFork unsucessful\n");
-        exit (0);
+    for (int i=0; i<N_ALIENS; i++){
+        alien_arg[i].hp = aliens[i].hp;
+        alien_arg[i].x = aliens[i].x;
+        alien_arg[i].y = aliens[i].y;
     }
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    else if (pid == 0){     // Child code:
-        // Connects to the parent
-        sprintf(buffer,"tcp://%s:%d",IP_ADRESS,PORT_RR);
-        void *context_child = zmq_ctx_new ();
-        void *requester_child = zmq_socket (context_child, ZMQ_REQ);
-        rc = zmq_connect (requester_child,buffer);
-        if (rc == -1){
-            printf("--- ERROR ---\nCHILD FAILED TO BIND TO PORT %d\n",PORT_RR);
-        }
-        // alien movement messages
-        message.msg_type = 4;
-        int resp;
 
-        while (1){
-            // 1s dellay
-            sleep (1);
-            // sends one message with a random movement of a alien
-            for (int i=0; i<N_ALIENS; i++){
-                if (aliens[i].hp == 1){
-                    message.id = i;
-                    message.direction = random() % 4;
-                    rc = zmq_send (requester_child, &message, sizeof(message), 0);
-                    if (rc == -1){
-                        mvprintw(0,0,"--- ERROR ---\nFAILED TO SEND MESSAGE");
-                        exit(0);
-                    }
-                    rc = zmq_recv (requester_child, &resp, sizeof(int), 0);
-                    if (rc == -1){
-                        mvprintw(0,0,"--- ERROR ---\nFAILED TO RECEIVE MESSAGE");
-                        exit(0);
-                    }
-                    if (resp != -1)
-                        aliens[i].hp = resp;
-                    else// end game situation
-                        break;
-                }
-            }
-            if (resp == -1)
-                break;
-        }
-        zmq_close(requester_child);
-        zmq_ctx_destroy(context_child);
-     }
+    long int thread_aliens_movement_id, thread_quit_id;
+    int check;
+    thread_aliens_movement_id = 1;
+    thread_quit_id = 2;
+
+    check = pthread_create(&thread_aliens_movement_id, NULL, aliens_movement, alien_arg);
+    if (check != 0) {
+        printf("--- ERROR ---\nCOULDN'T CREATE ALIEN MOVEMENT THREAD THREAD");
+        exit(1);
+    }
+
+    check = pthread_create(&thread_quit_id, NULL, quit, NULL);
+    if (check != 0) {
+        printf("--- ERROR ---\nCOULDN'T CREATE QUIT THREAD");
+        exit(1);
+    }
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    else{ // Parent code
+
 
     // ncurses initialization
-	initscr();		    	
-	cbreak();				
+    initscr();		    	
+    cbreak();				
     keypad(stdscr, TRUE);   
-	noecho();		
+    noecho();		
 
 
     /* creates the windows and draws the borders of the outer-space and the score board */
@@ -544,7 +593,7 @@ int main(){
     WINDOW * score_board = newwin(22, 22, 1, 24);
     box(space, 0, 0);
     box(score_board, 0, 0);
-    
+
     mvprintw(0, 2, "12345678901234567890");
     for (int i = 1; i < 10; i++){
         mvaddch(i+1, 0, i+48);
@@ -595,19 +644,73 @@ int main(){
         display(players, aliens, zaps, msg_time, space, score_board);
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // Proto Buffers Zone //
 
         HighScore msgHS = HIGH_SCORE__INIT;
 
         if (players[0].id != -1){
-            msgHS.has_num = 1;
-            msgHS.num = players[0].score;
+            msgHS.has_pa = 1;
+            msgHS.pa = players[0].score;
         }
         else{
-            msgHS.has_num = 0
+            msgHS.has_pa = 0;
         }
 
-        msgHS.has_num = 1;
-        msgHS.num = 7;
+        if (players[1].id != -1){
+            msgHS.has_pb = 1;
+            msgHS.pb = players[1].score;
+        }
+        else{
+            msgHS.has_pb = 0;
+        }
+        
+        if (players[2].id != -1){
+            msgHS.has_pc = 1;
+            msgHS.pc = players[2].score;
+        }
+        else{
+            msgHS.has_pc = 0;
+        }
+        
+        if (players[3].id != -1){
+            msgHS.has_pd = 1;
+            msgHS.pd = players[3].score;
+        }
+        else{
+            msgHS.has_pd = 0;
+        }
+        
+        if (players[4].id != -1){
+            msgHS.has_pe = 1;
+            msgHS.pe = players[4].score;
+        }
+        else{
+            msgHS.has_pe = 0;
+        }
+        
+        if (players[5].id != -1){
+            msgHS.has_pf = 1;
+            msgHS.pf = players[5].score;
+        }
+        else{
+            msgHS.has_pf = 0;
+        }
+        
+        if (players[6].id != -1){
+            msgHS.has_pg = 1;
+            msgHS.pg = players[2].score;
+        }
+        else{
+            msgHS.has_pg = 0;
+        }
+        
+        if (players[7].id != -1){
+            msgHS.has_ph = 1;
+            msgHS.ph = players[7].score;
+        }
+        else{
+            msgHS.has_ph = 0;
+        }
 
         size_t msgHS_size = high_score__get_packed_size(&msgHS);
         char *msgHS_packed = malloc(msgHS_size);
@@ -638,11 +741,14 @@ int main(){
 
     }
 
+    // Wait for threads to finish
+    pthread_join(thread_aliens_movement_id, NULL);
+    pthread_join(thread_quit_id, NULL);
+
     endwin(); // End curses mode
     zmq_close (responder_RR);
     zmq_close (responder_SP);
     zmq_ctx_destroy (context_RR);
     zmq_ctx_destroy (context_SP);
     return 0;
-    }
 }

@@ -52,15 +52,99 @@ void   high_score__free_unpacked
   assert(message->base.descriptor == &high_score__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-static const ProtobufCFieldDescriptor high_score__field_descriptors[1] =
+static const ProtobufCFieldDescriptor high_score__field_descriptors[8] =
 {
   {
-    "num",
+    "pA",
     1,
     PROTOBUF_C_LABEL_OPTIONAL,
     PROTOBUF_C_TYPE_INT32,
-    offsetof(HighScore, has_num),
-    offsetof(HighScore, num),
+    offsetof(HighScore, has_pa),
+    offsetof(HighScore, pa),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "pB",
+    2,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_INT32,
+    offsetof(HighScore, has_pb),
+    offsetof(HighScore, pb),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "pC",
+    3,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_INT32,
+    offsetof(HighScore, has_pc),
+    offsetof(HighScore, pc),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "pD",
+    4,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_INT32,
+    offsetof(HighScore, has_pd),
+    offsetof(HighScore, pd),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "pE",
+    5,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_INT32,
+    offsetof(HighScore, has_pe),
+    offsetof(HighScore, pe),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "pF",
+    6,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_INT32,
+    offsetof(HighScore, has_pf),
+    offsetof(HighScore, pf),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "pG",
+    7,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_INT32,
+    offsetof(HighScore, has_pg),
+    offsetof(HighScore, pg),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "pH",
+    8,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_INT32,
+    offsetof(HighScore, has_ph),
+    offsetof(HighScore, ph),
     NULL,
     NULL,
     0,             /* flags */
@@ -68,12 +152,19 @@ static const ProtobufCFieldDescriptor high_score__field_descriptors[1] =
   },
 };
 static const unsigned high_score__field_indices_by_name[] = {
-  0,   /* field[0] = num */
+  0,   /* field[0] = pA */
+  1,   /* field[1] = pB */
+  2,   /* field[2] = pC */
+  3,   /* field[3] = pD */
+  4,   /* field[4] = pE */
+  5,   /* field[5] = pF */
+  6,   /* field[6] = pG */
+  7,   /* field[7] = pH */
 };
 static const ProtobufCIntRange high_score__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 1 }
+  { 0, 8 }
 };
 const ProtobufCMessageDescriptor high_score__descriptor =
 {
@@ -83,7 +174,7 @@ const ProtobufCMessageDescriptor high_score__descriptor =
   "HighScore",
   "",
   sizeof(HighScore),
-  1,
+  8,
   high_score__field_descriptors,
   high_score__field_indices_by_name,
   1,  high_score__number_ranges,

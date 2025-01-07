@@ -25,11 +25,53 @@ int main() {
             HighScore protobuf_message;
             if (protobuf_message.ParseFromArray(message_raw.data(), message_raw.size())) {
                 // Check if the `num` field is set
-                if (protobuf_message.has_num()) {
-                    int num = protobuf_message.num();
-                    std::cout << "Received Protobuf message, num: " << num << std::endl;
+                if (protobuf_message.has_pa()) {
+                    int pA = protobuf_message.pa();
+                    std::cout << "Player A score: " << pA << std::endl;
                 } else {
-                    std::cout << "Received Protobuf message without 'num' field" << std::endl;
+                    std::cout << "Player A is not playing" << std::endl;
+                }
+                if (protobuf_message.has_pb()) {
+                    int pB = protobuf_message.pb();
+                    std::cout << "Player B score: " << pB << std::endl;
+                } else {
+                    std::cout << "Player B is not playing" << std::endl;
+                }
+                if (protobuf_message.has_pc()) {
+                    int pC = protobuf_message.pc();
+                    std::cout << "Player C score: " << pC << std::endl;
+                } else {
+                    std::cout << "Player C is not playing" << std::endl;
+                }
+                if (protobuf_message.has_pd()) {
+                    int pD = protobuf_message.pa();
+                    std::cout << "Player D score: " << pD << std::endl;
+                } else {
+                    std::cout << "Player D is not playing" << std::endl;
+                }
+                if (protobuf_message.has_pe()) {
+                    int pE = protobuf_message.pe();
+                    std::cout << "Player E score: " << pE << std::endl;
+                } else {
+                    std::cout << "Player E is not playing" << std::endl;
+                }
+                if (protobuf_message.has_pf()) {
+                    int pF = protobuf_message.pa();
+                    std::cout << "Player F score: " << pF << std::endl;
+                } else {
+                    std::cout << "Player F is not playing" << std::endl;
+                }
+                if (protobuf_message.has_pg()) {
+                    int pG = protobuf_message.pg();
+                    std::cout << "Player G score: " << pG << std::endl;
+                } else {
+                    std::cout << "Player G is not playing" << std::endl;
+                }
+                if (protobuf_message.has_ph()) {
+                    int pH = protobuf_message.ph();
+                    std::cout << "Player H score: " << pH << std::endl;
+                } else {
+                    std::cout << "Player H is not playing" << std::endl;
                 }
             } else {
                 std::cerr << "Failed to parse Protobuf message" << std::endl;
