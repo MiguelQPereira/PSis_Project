@@ -18,7 +18,8 @@
 /* Header file containing structs, definition of sockets and ip adrress */
 
 #define PORT_RR  5555 // REQ-REP
-#define PORT_SP  5554 // SUB-PUB
+#define PORT_SP  5554 // SUB-PUB - display
+#define PORT_HS  5553 // SUB-PUB - high score
 #define IP_ADRESS  "127.0.0.1" //Insert the address
 
 

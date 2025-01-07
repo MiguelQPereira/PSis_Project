@@ -1,4 +1,5 @@
 #include "../others/display.h"
+#include "high_score.pb-c.h"
 
 // Sends the messages to the outer-space display with the information to print
 void outer_space_update(void *socket, player_data_t players[8], alien_data_t aliens[N_ALIENS], pewpew_t zaps[2][16], time_t time, int game) {
@@ -454,6 +455,17 @@ int main(){
         exit(0);
     }
 
+    /* Declare and bind socket to comunicate with the high-score using the SUB/PUB patern */
+    sprintf(buffer,"tcp://*:%d",PORT_HS);
+    void *context_HS = zmq_ctx_new ();
+    void *publisher_HS = zmq_socket (context_HS, ZMQ_PUB);
+    rc = zmq_bind (publisher_HS, buffer);
+
+    if (rc == -1){
+        printf("--- ERROR ---\nBINDING TO PORT %d FAILED\n", PORT_HS);
+        exit(0);
+    }
+
     /* Declare and bind socket to comunicate with astronauts using the REP/REQ patern */
     sprintf(buffer,"tcp://*:%d",PORT_RR);
     void *context_RR = zmq_ctx_new ();
@@ -581,6 +593,38 @@ int main(){
         // Updates the displays from the server and outer-space-display
         outer_space_update(responder_SP, players, aliens, zaps, msg_time, 1);
         display(players, aliens, zaps, msg_time, space, score_board);
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        HighScore msgHS = HIGH_SCORE__INIT;
+
+        if (players[0].id != -1){
+            msgHS.has_num = 1;
+            msgHS.num = players[0].score;
+        }
+        else{
+            msgHS.has_num = 0
+        }
+
+        msgHS.has_num = 1;
+        msgHS.num = 7;
+
+        size_t msgHS_size = high_score__get_packed_size(&msgHS);
+        char *msgHS_packed = malloc(msgHS_size);
+
+        high_score__pack(&msgHS, msgHS_packed);
+
+
+        zmq_msg_t zmq_message;
+        zmq_msg_init_size(&zmq_message, msgHS_size);
+        memcpy(zmq_msg_data(&zmq_message), msgHS_packed, msgHS_size);
+        zmq_msg_send(&zmq_message, publisher_HS, 0);
+        zmq_msg_close(&zmq_message);
+
+        free(msgHS_packed);
+        
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
         int i;
         // Checks if the game ended
         for(i=0; i<N_ALIENS; i++){
