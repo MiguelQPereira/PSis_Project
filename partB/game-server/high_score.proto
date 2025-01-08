@@ -1,6 +1,7 @@
 syntax = "proto2";
  
 message HighScore {
+  optional int32 game = 9;
   optional int32 pA = 1;
   optional int32 pB = 2;
   optional int32 pC = 3;

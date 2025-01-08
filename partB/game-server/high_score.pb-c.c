@@ -52,7 +52,7 @@ void   high_score__free_unpacked
   assert(message->base.descriptor == &high_score__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-static const ProtobufCFieldDescriptor high_score__field_descriptors[8] =
+static const ProtobufCFieldDescriptor high_score__field_descriptors[9] =
 {
   {
     "pA",
@@ -150,8 +150,21 @@ static const ProtobufCFieldDescriptor high_score__field_descriptors[8] =
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "game",
+    9,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_INT32,
+    offsetof(HighScore, has_game),
+    offsetof(HighScore, game),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned high_score__field_indices_by_name[] = {
+  8,   /* field[8] = game */
   0,   /* field[0] = pA */
   1,   /* field[1] = pB */
   2,   /* field[2] = pC */
@@ -164,7 +177,7 @@ static const unsigned high_score__field_indices_by_name[] = {
 static const ProtobufCIntRange high_score__number_ranges[1 + 1] =
 {
   { 1, 0 },
-  { 0, 8 }
+  { 0, 9 }
 };
 const ProtobufCMessageDescriptor high_score__descriptor =
 {
@@ -174,7 +187,7 @@ const ProtobufCMessageDescriptor high_score__descriptor =
   "HighScore",
   "",
   sizeof(HighScore),
-  8,
+  9,
   high_score__field_descriptors,
   high_score__field_indices_by_name,
   1,  high_score__number_ranges,

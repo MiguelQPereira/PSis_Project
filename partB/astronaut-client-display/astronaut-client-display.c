@@ -94,8 +94,8 @@ void * show_display(){
 
         
     }
-    
-    for (int i = 0; i < 25; i++){
+    mvprintw(0, 0, "Server Closed. Press a q/Q                                       ");
+    for (int i = 1; i < 25; i++){
         mvprintw(i, 0, "                                                     ");
     }
     move(0,0);

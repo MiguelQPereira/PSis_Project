@@ -29,8 +29,6 @@ int main() {
     box(win, 0, 0);     // Draw a box around the window
 
 
-    endwin();           // End curses mode
-
     while (true) {
         try {
             // Receive the message
@@ -40,69 +38,73 @@ int main() {
             // Decode the Protobuf message
             HighScore protobuf_message;
             if (protobuf_message.ParseFromArray(message_raw.data(), message_raw.size())) {
+                mvwprintw(win, 0, 10, "HIGH SCORES");
+                if (protobuf_message.has_game()) {
+                    break;
+                }
                 // Check if the `num` field is set
                 if (protobuf_message.has_pa()) {
                     int pA = protobuf_message.pa();
-                    mvwprintw(win, 1, 1, "Player A: %d           ", pA);
+                    mvwprintw(win, 2, 4, "Player A: %d           ", pA);
                     //std::cout << "Player A score: " << pA << std::endl;
                 } else {
-                    mvwprintw(win, 1, 1, "Player A not playing");
+                    mvwprintw(win, 2, 4, "Player A not playing");
                     //std::cout << "Player A is not playing" << std::endl;
                 }
                 if (protobuf_message.has_pb()) {
                     int pB = protobuf_message.pb();
-                    mvwprintw(win, 3, 1, "Player B: %d           ", pB);
+                    mvwprintw(win, 4, 4, "Player B: %d           ", pB);
                     //std::cout << "Player B score: " << pB << std::endl;
                 } else {
-                    mvwprintw(win, 3, 1, "Player B not playing");
+                    mvwprintw(win, 4, 4, "Player B not playing");
                     //std::cout << "Player B is not playing" << std::endl;
                 }
                 if (protobuf_message.has_pc()) {
                     int pC = protobuf_message.pc();
-                    mvwprintw(win, 5, 1, "Player C: %d           ", pC);
+                    mvwprintw(win, 6, 4,  "Player C: %d           ", pC);
                     //std::cout << "Player C score: " << pC << std::endl;
                 } else {
-                    mvwprintw(win, 5, 1, "Player C not playing");
+                    mvwprintw(win, 6, 4, "Player C not playing");
                     //std::cout << "Player C is not playing" << std::endl;
                 }
                 if (protobuf_message.has_pd()) {
                     int pD = protobuf_message.pd();
-                    mvwprintw(win, 7, 1, "Player D: %d           ", pD);
+                    mvwprintw(win, 8, 4, "Player D: %d           ", pD);
                     //std::cout << "Player D score: " << pD << std::endl;
                 } else {
-                    mvwprintw(win, 7, 1, "Player D not playing");
+                    mvwprintw(win, 8, 4, "Player D not playing");
                     //std::cout << "Player D is not playing" << std::endl;
                 }
                 if (protobuf_message.has_pe()) {
                     int pE = protobuf_message.pe();
-                    mvwprintw(win, 9, 1, "Player E: %d           ", pE);
+                    mvwprintw(win, 10, 4, "Player E: %d           ", pE);
                     //std::cout << "Player E score: " << pE << std::endl;
                 } else {
-                    mvwprintw(win, 9, 1, "Player E not playing");
+                    mvwprintw(win, 10, 4, "Player E not playing");
                     //std::cout << "Player E is not playing" << std::endl;
                 }
                 if (protobuf_message.has_pf()) {
                     int pF = protobuf_message.pa();
-                    mvwprintw(win, 11, 1, "Player F: %d           ", pF);
+                    mvwprintw(win, 12, 4, "Player F: %d           ", pF);
                     //std::cout << "Player F score: " << pF << std::endl;
                 } else {
-                    mvwprintw(win, 11, 1, "Player F not playing");
+                    mvwprintw(win, 12, 4, "Player F not playing");
                     //std::cout << "Player F is not playing" << std::endl;
                 }
                 if (protobuf_message.has_pg()) {
                     int pG = protobuf_message.pg();
-                    mvwprintw(win, 13, 1, "Player G: %d           ", pG);
+                    mvwprintw(win, 14, 4, "Player G: %d           ", pG);
                     //std::cout << "Player G score: " << pG << std::endl;
                 } else {
-                    mvwprintw(win, 13, 1, "Player G not playing");
+                    mvwprintw(win, 14, 4, "Player G not playing");
                     //std::cout << "Player G is not playing" << std::endl;
                 }
                 if (protobuf_message.has_ph()) {
                     int pH = protobuf_message.ph();
-                    mvwprintw(win, 15, 1, "Player H: %d           ", pH);
+                    mvwprintw(win, 16, 4, "Player H: %d           ", pH);
                     //std::cout << "Player H score: " << pH << std::endl;
                 } else {
-                    mvwprintw(win, 15, 1, "Player H not playing");
+                    mvwprintw(win, 16, 4, "Player H not playing");
                     //std::cout << "Player H is not playing" << std::endl;
                 }
 
@@ -117,6 +119,7 @@ int main() {
         }
     }
 
+    endwin(); // End curses mode
     // Clean up and close the socket
     subscriber.close();
     context.close();

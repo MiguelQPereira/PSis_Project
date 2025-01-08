@@ -4,8 +4,12 @@
 
 int game = 1; // Variable to control the game status
 
+time_t last_kill = 0; // Variable to control the last kill of an alien
+
+pthread_mutex_t lock_alien = PTHREAD_MUTEX_INITIALIZER; // Mutex to control the access to the last kill variable
+
 // Sends the messages to the outer-space display with the information to print
-void outer_space_update(void *socket, player_data_t players[8], alien_data_t aliens[N_ALIENS], pewpew_t zaps[2][16], time_t time, int game) {
+void outer_space_update(void *socket, player_data_t players[8], alien_data_t aliens[N_ALIENS], pewpew_t zaps[2][16], time_t time, int play) {
     
     int rc;
         rc = zmq_send (socket, "DISPLAY", strlen("DISPLAY"), ZMQ_SNDMORE);  // Type
@@ -38,7 +42,7 @@ void outer_space_update(void *socket, player_data_t players[8], alien_data_t ali
             exit(0);
         }
 
-        rc = zmq_send (socket, &game, sizeof(int), 0);      // game status // if this int is 0 the game has ended
+        rc = zmq_send (socket, &play, sizeof(int), 0);      // game status // if this int is 0 the game has ended
         if (rc == -1){
             mvprintw(0,0,"--- ERROR ---\nFAILED TO PUBLISH MESSAGE 6");
             exit(0);
@@ -155,7 +159,8 @@ void alien_message(void *socket, player_data_t players[8] , alien_data_t aliens[
     int rc;
 
     // Checks if the alien is still alive
-    if (aliens[message.id].hp == 0){
+    if (aliens[message.id].hp == -1){
+        aliens[message.id].hp = 0;
         rc = zmq_send(socket, &aliens[message.id].hp, sizeof(int), 0);
         if (rc == -1){
         mvprintw(0,0,"--- ERROR ---\nFAILED TO SEND MESSAGE (alien_message)");
@@ -163,6 +168,12 @@ void alien_message(void *socket, player_data_t players[8] , alien_data_t aliens[
     }
         return;
     }
+    if (aliens[message.id].hp == 0){
+        aliens[message.id].hp =1;
+        aliens[message.id].x = random()%16 + 2;
+        aliens[message.id].y = random()%16 + 2;
+    }
+        
 
     // Computes moviment
     switch (message.direction){
@@ -195,11 +206,17 @@ void alien_message(void *socket, player_data_t players[8] , alien_data_t aliens[
     if (zaps[1][aliens[message.id].x - 2].player != -1 && difftime(msg_time, zaps[1][aliens[message.id].x-2].time) < 0.5){
         aliens[message.id].hp = 0;
         players[zaps[1][aliens[message.id].x - 2].player].score++;
+        pthread_mutex_lock(&lock_alien);
+            last_kill = msg_time;
+        pthread_mutex_unlock(&lock_alien);
     }
 
     if (zaps[0][aliens[message.id].y - 2].player != -1 && difftime(msg_time, zaps[0][aliens[message.id].y-2].time) < 0.5){
         aliens[message.id].hp = 0;
         players[zaps[0][aliens[message.id].y - 2].player].score++;
+        pthread_mutex_lock(&lock_alien);
+            last_kill = msg_time;
+        pthread_mutex_unlock(&lock_alien);
     }
     // Sends response
     rc = zmq_send(socket, &aliens[message.id].hp, sizeof(int), 0);
@@ -245,8 +262,11 @@ void zap_msg(void *socket, player_data_t players[8], remote_char_t message, time
         // Aliens
         for (int i=0; i < N_ALIENS; i++) {   
             if(players[idx].x == alien[i].x && alien[i].hp != 0) {
-                alien[i].hp = 0;
+                alien[i].hp = -1;
                 players[idx].score++;
+                pthread_mutex_lock(&lock_alien);
+                    last_kill = time;
+                pthread_mutex_unlock(&lock_alien);
             } 
         }
     } else {
@@ -263,8 +283,11 @@ void zap_msg(void *socket, player_data_t players[8], remote_char_t message, time
         for (int i=0; i < N_ALIENS; i++) {
 
             if(players[idx].y == alien[i].y  && alien[i].hp != 0) {
-                alien[i].hp = 0;
+                alien[i].hp = -1;
                 players[idx].score++;
+                pthread_mutex_lock(&lock_alien);
+                    last_kill = time;
+                pthread_mutex_unlock(&lock_alien);
             }
         }
     }
@@ -311,6 +334,7 @@ int end_game(void *socket, player_data_t players[8], remote_char_t message, int 
     int rc, i;
     int maxscore = 0;
     char end;
+    int alien = 1;
     // Clears the terminal
     for (int i = 0; i < 25; i++){
         mvprintw(i, 0, "                                                     ");
@@ -327,7 +351,7 @@ int end_game(void *socket, player_data_t players[8], remote_char_t message, int 
 
     refresh();
     // This while loop will return to all the players the end game event and if the player won
-    while (num_players > 0){
+    while (num_players > 0 || alien){
         rc = zmq_recv (socket, &message, sizeof(remote_char_t), 0);
         if (rc == -1){
             mvprintw(0,0,"--- ERROR ---\nFAILED TO RECEIVE MESSAGE (end_game)");
@@ -352,18 +376,23 @@ int end_game(void *socket, player_data_t players[8], remote_char_t message, int 
                     mvprintw(0,0,"--- ERROR ---\nFAILED TO SEND MESSAGE (end_game)");
                     exit(0);
                 }
-            }    
+            }
             num_players--;
             continue;
+        }else {
+            alien = 0;
+            // If it's a message from the aliens
+            i=-1;
+            rc = zmq_send (socket, &i, sizeof(int), 0);
+            if (rc == -1){
+                mvprintw(0,0,"--- ERROR ---\nFAILED TO SEND MESSAGE (end_game)");
+                exit(0);
+            }
         }
-        // If it's a message from the aliens (child)
-        i=-1;
-        rc = zmq_send (socket, &i, sizeof(int), 0);
-        if (rc == -1){
-            mvprintw(0,0,"--- ERROR ---\nFAILED TO SEND MESSAGE (end_game)");
-            exit(0);
-        }
+        
     }
+    mvprintw(1,0,"Press q/Q to quit                    ");
+    refresh();
 
     return 0;
         
@@ -372,7 +401,7 @@ int end_game(void *socket, player_data_t players[8], remote_char_t message, int 
 void * aliens_movement(void *arg){
 
     char buffer[100];
-    int rc;
+    int rc, alive = N_ALIENS;
     remote_char_t message;
     alien_data_t aliens[N_ALIENS];
 
@@ -398,6 +427,7 @@ void * aliens_movement(void *arg){
     int resp;
 
     while (1){
+        alive = 0;
         // 1s delay
         sleep (1);
         // sends one message with a random movement of a alien
@@ -415,14 +445,30 @@ void * aliens_movement(void *arg){
                     mvprintw(0,0,"--- ERROR ---\nFAILED TO RECEIVE MESSAGE");
                     exit(0);
                 }
-                if (resp != -1)
+                if (resp != -1){
+                    alive += resp;
                     aliens[i].hp = resp;
+                } 
                 else// end game situation
                     break;
             }
         }
         if (resp == -1)
             break;
+        
+        if(difftime(time(NULL), last_kill) > 10 && alive < N_ALIENS){
+            int childs = alive * 0.1;
+            for (int i=0; i<N_ALIENS; i++){
+                while (aliens[i].hp!=0){
+                    i++;
+                }
+                aliens[i].hp = 1;
+                childs--;
+                if(childs == 0)
+                    break;
+                
+            }
+        }
     }
     zmq_close(requester_child);
     zmq_ctx_destroy(context_child);
@@ -433,16 +479,13 @@ void * aliens_movement(void *arg){
 void * quit(){
 
     char c;
-    c = getch();
-
-    if (c == 'q' || c == 'Q'){
-        game = 0;
+    while(game){
+        c = getch();
+        if (c == 'q' || c == 'Q'){
+            game = 0;
+        }
     }
-
 }
-
-
-
 
 int main(){
     	
@@ -550,8 +593,7 @@ int main(){
         exit(0);
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     alien_arg = malloc (N_ALIENS * sizeof(alien_data_t));
 
     for (int i=0; i<N_ALIENS; i++){
@@ -560,10 +602,9 @@ int main(){
         alien_arg[i].y = aliens[i].y;
     }
 
-    long int thread_aliens_movement_id, thread_quit_id;
+    long int thread_aliens_movement_id;
     int check;
     thread_aliens_movement_id = 1;
-    thread_quit_id = 2;
 
     check = pthread_create(&thread_aliens_movement_id, NULL, aliens_movement, alien_arg);
     if (check != 0) {
@@ -571,22 +612,21 @@ int main(){
         exit(1);
     }
 
+    // ncurses initialization
+    initscr();		    	
+    cbreak();				
+    keypad(stdscr, TRUE);   
+    noecho();
+    refresh();	
+
+    long int thread_quit_id;
+    thread_quit_id = 2;
+
     check = pthread_create(&thread_quit_id, NULL, quit, NULL);
     if (check != 0) {
         printf("--- ERROR ---\nCOULDN'T CREATE QUIT THREAD");
         exit(1);
     }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-    // ncurses initialization
-    initscr();		    	
-    cbreak();				
-    keypad(stdscr, TRUE);   
-    noecho();		
-
 
     /* creates the windows and draws the borders of the outer-space and the score board */
     WINDOW * space = newwin(22, 22, 1, 1);
@@ -647,6 +687,8 @@ int main(){
         // Proto Buffers Zone //
 
         HighScore msgHS = HIGH_SCORE__INIT;
+
+        msgHS.has_game = 0;
 
         if (players[0].id != -1){
             msgHS.has_pa = 1;
@@ -735,15 +777,33 @@ int main(){
                 break;
         }
         if(i==N_ALIENS){
-            outer_space_update(responder_SP, players, aliens, zaps, msg_time, 0);
-            game = end_game(responder_RR, players,message, num_players);   
+            game = 0; 
         }    
 
     }
+    outer_space_update(responder_SP, players, aliens, zaps, msg_time, 0);
+    end_game(responder_RR, players,message, num_players);
 
     // Wait for threads to finish
     pthread_join(thread_aliens_movement_id, NULL);
     pthread_join(thread_quit_id, NULL);
+
+    HighScore msgHS = HIGH_SCORE__INIT;
+    msgHS.has_game = 1;
+    msgHS.game = 1;
+    size_t msgHS_size = high_score__get_packed_size(&msgHS);
+    char *msgHS_packed = malloc(msgHS_size);
+
+    high_score__pack(&msgHS, msgHS_packed);
+
+
+    zmq_msg_t zmq_message;
+    zmq_msg_init_size(&zmq_message, msgHS_size);
+    memcpy(zmq_msg_data(&zmq_message), msgHS_packed, msgHS_size);
+    zmq_msg_send(&zmq_message, publisher_HS, 0);
+    zmq_msg_close(&zmq_message);
+
+    free(msgHS_packed);
 
     endwin(); // End curses mode
     zmq_close (responder_RR);
