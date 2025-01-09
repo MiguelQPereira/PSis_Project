@@ -22,13 +22,12 @@ void * show_display(){
     if (rc == -1){
         printf("--- ERROR ---\nBINDING TO PORT %d FAILED\n",PORT_SP);
     }
-    zmq_setsockopt(subscriber, ZMQ_SUBSCRIBE,"DISPLAY", strlen("DISPLAY"));
-    // ncurses initialization
-    initscr();		    	
-    cbreak();				
-    keypad(stdscr, TRUE);   
-    noecho();		
+    zmq_setsockopt(subscriber, ZMQ_SUBSCRIBE,"DISPLAY", strlen("DISPLAY"));		
 
+    initscr();			/* Start curses mode 		*/
+	cbreak();				/* Line buffering disabled	*/
+	keypad(stdscr, TRUE);		/* We get F1, F2 etc..		*/
+	noecho();			/* Don't echo() while we do getch */
 
     /* creates the windows and draws the borders of the outer-space and the score board */
     WINDOW * space = newwin(22, 22, 1, 1);
@@ -147,6 +146,11 @@ int main(){
         exit(1);
     }
 
+    
+    
+    // prepare the movement message
+    message.msg_type = 1;
+
     long int thread_display_id;
     int check;
     thread_display_id = 0;
@@ -157,14 +161,6 @@ int main(){
         printf("--- ERROR ---\nCOULDN'T CREATE DISPLAY THREAD");
         exit(1);
     }
-    
-    // prepare the movement message
-    message.msg_type = 1;
-
-	initscr();			/* Start curses mode 		*/
-	cbreak();				/* Line buffering disabled	*/
-	keypad(stdscr, TRUE);		/* We get F1, F2 etc..		*/
-	noecho();			/* Don't echo() while we do getch */
 
     int n = 0; // Count the keys pressed
     
@@ -269,7 +265,6 @@ int main(){
                 score = n_resp;
             }
         }
- 
 
     }while(key != 'Q' && key != 'q');
  

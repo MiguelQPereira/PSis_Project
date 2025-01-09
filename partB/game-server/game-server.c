@@ -740,7 +740,7 @@ int main(){
         
         if (players[6].id != -1){
             msgHS.has_pg = 1;
-            msgHS.pg = players[2].score;
+            msgHS.pg = players[6].score;
         }
         else{
             msgHS.has_pg = 0;
