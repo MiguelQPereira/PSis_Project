@@ -1,0 +1,13 @@
+syntax = "proto2";
+ 
+message HighScore {
+  optional int32 game = 9;
+  optional int32 pA = 1;
+  optional int32 pB = 2;
+  optional int32 pC = 3;
+  optional int32 pD = 4;
+  optional int32 pE = 5;
+  optional int32 pF = 6;
+  optional int32 pG = 7;
+  optional int32 pH = 8;
+}

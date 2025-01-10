@@ -23,6 +23,7 @@ void * show_display(){
         printf("--- ERROR ---\nBINDING TO PORT %d FAILED\n",PORT_SP);
     }
     zmq_setsockopt(subscriber, ZMQ_SUBSCRIBE,"DISPLAY", strlen("DISPLAY"));
+
     // ncurses initialization
     initscr();		    	
     cbreak();				
@@ -86,13 +87,11 @@ void * show_display(){
             exit(0);
         }
 
-        if (game == 1 && client_game == 1){   
+        if (game == 1 && client_game == 1){   // End game condition
             display(players, aliens, zaps, msg_time, space, score_board);
         }else{
             break;
-        }
-
-        
+        }  
     }
     mvprintw(0, 0, "Server Closed. Press a q/Q                                       ");
     for (int i = 1; i < 25; i++){
@@ -113,7 +112,7 @@ int main(){
     char resp[100];
     int score = 0, n_resp = 0;
 
-    /* Declare and bind socket to comunicate with astronauts using the REP/REQ patern */
+    /* Declare and bind socket to comunicate with server using the REP/REQ patern */
     sprintf(buffer,"tcp://%s:%d",IP_ADRESS,PORT_RR);
     void *context = zmq_ctx_new ();
     void *requester = zmq_socket (context, ZMQ_REQ);
