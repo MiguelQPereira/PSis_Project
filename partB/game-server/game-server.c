@@ -9,7 +9,7 @@ time_t last_kill = 0; // Variable to control the last kill of an alien
 pthread_mutex_t lock_alien = PTHREAD_MUTEX_INITIALIZER; // Mutex to control the access to the last kill variable
 
 // Sends the messages to the outer-space display with the information to print
-void outer_space_update(void *socket, player_data_t players[8], alien_data_t aliens[N_ALIENS], pewpew_t zaps[2][16], time_t time, int play) {
+void outer_space_update(void *socket, player_data_t players[8], alien_data_t aliens[N_ALIENS], pewpew_t zaps[2][16], time_t time , int play) {
     
     int rc;
         rc = zmq_send (socket, "DISPLAY", strlen("DISPLAY"), ZMQ_SNDMORE);  // Type
@@ -560,6 +560,7 @@ int main(){
         }
     }
 
+
     /* Declare and bind socket to comunicate with the display using the SUB/PUB patern */
     sprintf(buffer,"tcp://*:%d",PORT_SP);
     void *context_SP = zmq_ctx_new ();
@@ -568,6 +569,18 @@ int main(){
 
     if (rc == -1){
         printf("--- ERROR ---\nBINDING TO PORT %d FAILED\n", PORT_SP);
+        exit(0);
+    }
+  
+
+    /* Declare and bind socket to comunicate with astronauts using the REP/REQ patern */
+    sprintf(buffer,"tcp://*:%d",PORT_RR);
+    void *context_RR = zmq_ctx_new ();
+    void *responder_RR = zmq_socket (context_RR, ZMQ_REP);
+    rc = zmq_bind (responder_RR, buffer);
+
+    if (rc == -1){
+        printf("--- ERROR ---\nBINDING TO PORT %d FAILED\n", PORT_RR);
         exit(0);
     }
 
@@ -582,16 +595,6 @@ int main(){
         exit(0);
     }
 
-    /* Declare and bind socket to comunicate with astronauts using the REP/REQ patern */
-    sprintf(buffer,"tcp://*:%d",PORT_RR);
-    void *context_RR = zmq_ctx_new ();
-    void *responder_RR = zmq_socket (context_RR, ZMQ_REP);
-    rc = zmq_bind (responder_RR, buffer);
-
-    if (rc == -1){
-        printf("--- ERROR ---\nBINDING TO PORT %d FAILED\n", PORT_RR);
-        exit(0);
-    }
 
 
     alien_arg = malloc (N_ALIENS * sizeof(alien_data_t));

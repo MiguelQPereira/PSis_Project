@@ -10,8 +10,8 @@
 
 #ifndef STRUCTS_H
 #define STRUCTS_H
-#define  WINDOW_SIZE 20
-#define N_ALIENS 5
+#define WINDOW_SIZE 20
+#define N_ALIENS 85
 
 
 
@@ -20,7 +20,7 @@
 #define PORT_RR  5555 // REQ-REP
 #define PORT_SP  5554 // SUB-PUB - display
 #define PORT_HS  5553 // SUB-PUB - high score
-#define IP_ADRESS  "127.0.0.1" //Insert the address
+#define IP_ADRESS  "172.17.225.138" //Insert the address
 
 
 

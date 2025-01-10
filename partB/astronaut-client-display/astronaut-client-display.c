@@ -270,7 +270,6 @@ int main(){
             }
         }
  
-
     }while(key != 'Q' && key != 'q');
  
     // Wait for thread to finish
