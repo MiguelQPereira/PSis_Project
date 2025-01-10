@@ -366,11 +366,6 @@ int end_game(void *socket, player_data_t players[8], remote_char_t message, int 
 }
 
 
-
-
-
-
-
 int main(){	
     int rc, num_players = 0, game = 1;
     char buffer[100];

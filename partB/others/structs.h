@@ -20,7 +20,7 @@
 #define PORT_RR  5555 // REQ-REP
 #define PORT_SP  5554 // SUB-PUB - display
 #define PORT_HS  5553 // SUB-PUB - high score
-#define IP_ADRESS  "172.20.10.6" //Insert the address
+#define IP_ADRESS  "192.168.1.87" //Insert the address
 
 
 
