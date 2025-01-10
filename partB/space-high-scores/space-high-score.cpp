@@ -84,7 +84,7 @@ int main() {
                     //std::cout << "Player E is not playing" << std::endl;
                 }
                 if (protobuf_message.has_pf()) {
-                    int pF = protobuf_message.pf();
+                    int pF = protobuf_message.pa();
                     mvwprintw(win, 12, 4, "Player F: %d           ", pF);
                     //std::cout << "Player F score: " << pF << std::endl;
                 } else {

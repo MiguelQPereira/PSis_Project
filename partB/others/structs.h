@@ -10,7 +10,7 @@
 
 #ifndef STRUCTS_H
 #define STRUCTS_H
-#define  WINDOW_SIZE 20
+#define WINDOW_SIZE 20
 #define N_ALIENS 85
 
 
